@@ -1,5 +1,4 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
 import QtQuick.Effects
 
 Item {
@@ -37,26 +36,11 @@ Item {
     }
 
     Image {
-        id: camKaynak
         anchors.fill: parent
         source: kart.kartKaynak
         fillMode: Image.Stretch
         cache: true
         smooth: true
-        visible: false
-    }
-    Rectangle {
-        id: camMaske
-        anchors.fill: parent
-        radius: 14
-        color: "white"
-        layer.enabled: true
-        visible: false
-    }
-    OpacityMask {
-        anchors.fill: parent
-        source: camKaynak
-        maskSource: camMaske
     }
 
     Rectangle {
@@ -189,6 +173,7 @@ Item {
             width: muzikModel.sureMs > 0
                 ? parent.width * Math.min(1, muzikModel.konumMs / muzikModel.sureMs) : 0
             height: parent.height
+            Behavior on width { NumberAnimation { duration: 700; easing.type: Easing.OutQuad } }
             radius: 2
             color: kart.ana
         }

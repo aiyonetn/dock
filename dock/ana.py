@@ -462,7 +462,7 @@ class Dock(QWidget):
 
     @staticmethod
     def _bulanik(resim: QImage, kat: int = 10) -> QImage:
-        return Dock._cam(resim, kat, 204, 20)
+        return Dock._cam(resim, kat, 150, 20)
 
     def _kart_arkaplan_yenile(self) -> None:
         if self._tam is None or self._kart_rect is None:
