@@ -28,18 +28,22 @@ Item {
         return toplam + Math.max(0, ikonSayisi - 1) * bosluk
     }
     readonly property real panelGenislik: icerikGenislik + 2 * yanBosluk
-    readonly property real sigma: 0.85
 
     property real fareX: -1
     property int ipucu: -1
 
-    function hedefOlcek(i) {
+    // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
+    readonly property int yakinIkon: {
         if (fareX < 0 || ikonSayisi === 0)
-            return 1.0
+            return -1
         var sol = (width - tabanGenislik) / 2
-        var merkez = sol + i * (ikonBoyut + bosluk) + ikonBoyut / 2
-        var d = (fareX - merkez) / (ikonBoyut + bosluk)
-        return 1.0 + (buyutmeCarpan - 1.0) * Math.exp(-(d * d) / (2 * sigma * sigma))
+        var indeks = Math.round(
+            (fareX - sol - ikonBoyut / 2) / (ikonBoyut + bosluk))
+        return Math.max(0, Math.min(ikonSayisi - 1, indeks))
+    }
+
+    function hedefOlcek(i) {
+        return i === yakinIkon ? buyutmeCarpan : 1.0
     }
 
     HoverHandler {
@@ -72,9 +76,7 @@ Item {
         color: "#66000000"
         layer.enabled: true
         layer.effect: MultiEffect {
-            blurEnabled: true
-            blur: 1.0
-            blurMax: 18
+            blurEnabled: false
         }
     }
 

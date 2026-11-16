@@ -1,3 +1,3 @@
-pid=479970
+pid=507500
     PID %CPU   RSS     ELAPSED CMD
- 479970  3.1 190064      01:03 /home/claudecodexsever/omp-isler/dock-dock-mvp/.venv/bin/python main.py
+ 507500  3.0 187284      01:03 /home/claudecodexsever/omp-isler/dock-dock-mvp/.venv/bin/python main.py

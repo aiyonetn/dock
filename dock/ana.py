@@ -167,7 +167,7 @@ class Dock(QWidget):
 
     def _zamanlayicilari_kur(self) -> None:
         self._arkaplan_zaman = QTimer(self)
-        self._arkaplan_zaman.setInterval(1000)
+        self._arkaplan_zaman.setInterval(3000)
         self._arkaplan_zaman.timeout.connect(self._arkaplan_yenile)
         self._arkaplan_zaman.start()
 
