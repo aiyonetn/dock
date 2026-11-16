@@ -6,7 +6,7 @@ from PySide6.QtDBus import QDBusConnection, QDBusInterface
 
 _MPRIS_ON_EK = "org.mpris.MediaPlayer2."
 _DEMO_BASLIK = "Midnight Drive"
-_DEMO_SANATCI = "Demo"
+_DEMO_SANATCI = "Demo Player"
 _DEMO_SURE = 228_000
 
 
@@ -17,7 +17,7 @@ class MuzikModel(QObject):
         super().__init__(parent)
         self._baslik = _DEMO_BASLIK
         self._sanatci = _DEMO_SANATCI
-        self._album = "Demo"
+        self._album = "Single"
         self._kapak = ""
         self._sure = _DEMO_SURE
         self._konum = 72_000

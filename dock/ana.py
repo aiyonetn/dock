@@ -211,7 +211,7 @@ class Dock(QWidget):
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 207, 7)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 214, 7)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())

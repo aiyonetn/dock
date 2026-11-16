@@ -4,7 +4,7 @@ import QtQuick.Effects
 Item {
     id: kart
     width: 320
-    height: 187
+    height: 194
 
     property string kartKaynak: ""
     readonly property color ana: "#F7F7F8"
@@ -145,10 +145,10 @@ Item {
     }
     Text {
         x: 86
-        y: 38
+        y: 36
         width: 216
         text: muzikModel.sanatci + (muzikModel.album ? " · " + muzikModel.album : "")
-        color: kart.ikincil
+        color: "#9A9AA0"
         font.pixelSize: 11
         elide: Text.ElideRight
     }
@@ -182,7 +182,7 @@ Item {
         x: 18
         y: 99
         text: kart.sure(muzikModel.konumMs)
-        color: kart.ucuncul
+        color: "#9A9AA0"
         font.pixelSize: 10
     }
     Text {
@@ -190,14 +190,14 @@ Item {
         anchors.rightMargin: 18
         y: 99
         text: kart.sure(muzikModel.sureMs)
-        color: kart.ucuncul
+        color: "#9A9AA0"
         font.pixelSize: 10
     }
 
     // --- Dugmeler ----------------------------------------------------------
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 121
+        y: 123
         spacing: 24
 
         Item {
@@ -214,8 +214,8 @@ Item {
                     var c = getContext("2d")
                     c.reset()
                     c.fillStyle = "#F7F7F8"
-                    c.beginPath(); c.moveTo(9, 14); c.lineTo(14, 8); c.lineTo(14, 20); c.fill()
-                    c.beginPath(); c.moveTo(15, 14); c.lineTo(20, 8); c.lineTo(20, 20); c.fill()
+                    c.beginPath(); c.moveTo(6, 14); c.lineTo(14, 6); c.lineTo(14, 22); c.fill()
+                    c.beginPath(); c.moveTo(14, 14); c.lineTo(22, 6); c.lineTo(22, 22); c.fill()
                 }
             }
             MouseArea {
@@ -245,10 +245,10 @@ Item {
                     c.reset()
                     c.fillStyle = "#0A0A0A"
                     if (oynatCanvas.caliyor) {
-                        c.fillRect(9, 8, 3.5, 12)
-                        c.fillRect(15.5, 8, 3.5, 12)
+                        c.fillRect(9, 7, 4, 14)
+                        c.fillRect(15, 7, 4, 14)
                     } else {
-                        c.beginPath(); c.moveTo(11, 8); c.lineTo(20, 14); c.lineTo(11, 20); c.fill()
+                        c.beginPath(); c.moveTo(8, 6); c.lineTo(19, 14); c.lineTo(8, 22); c.fill()
                     }
                 }
             }
@@ -275,8 +275,8 @@ Item {
                     var c = getContext("2d")
                     c.reset()
                     c.fillStyle = "#F7F7F8"
-                    c.beginPath(); c.moveTo(8, 14); c.lineTo(13, 8); c.lineTo(13, 20); c.fill()
-                    c.beginPath(); c.moveTo(14, 14); c.lineTo(19, 8); c.lineTo(19, 20); c.fill()
+                    c.beginPath(); c.moveTo(22, 14); c.lineTo(14, 6); c.lineTo(14, 22); c.fill()
+                    c.beginPath(); c.moveTo(14, 14); c.lineTo(6, 6); c.lineTo(6, 22); c.fill()
                 }
             }
             MouseArea {
@@ -291,10 +291,10 @@ Item {
 
     Text {
         x: 18
-        y: 157
+        y: 163
         text: muzikModel.demo ? "demo · oynatıcı yok" : "MPRIS"
-        color: kart.ucuncul
-        font.pixelSize: 10
+        color: "#8E8E93"
+        font.pixelSize: 11
     }
 
 }

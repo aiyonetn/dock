@@ -3,3 +3,6 @@ pid=507500
  507500  3.0 187284      01:03 /home/claudecodexsever/omp-isler/dock-dock-mvp/.venv/bin/python main.py
 
 muzik karti acik, 30 sn (demo): CPU %2.23
+
+muzik karti acik, 20 sn: CPU %2.3
+muzik karti kapali, 20 sn: CPU %2.25

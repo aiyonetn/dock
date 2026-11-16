@@ -36,3 +36,12 @@ ve geri / oynat-duraklat / ileri düğmeleri.
 - Oynatıcı yoksa **demo modu** çalışır ("Midnight Drive · Demo", 3:48) ve kartın
   alt satırında `demo · oynatıcı yok` yazar; gerçek çalıyor izlenimi verilmez.
 - AI limit ve müzik kartlarından yalnızca biri açık olabilir; dışına tıklamak kapatır.
+
+### Müzik kartı cila
+
+- Demo parça `Midnight Drive` / `Demo Player · Single`; "Demo · Demo" tekrarı yok.
+- Kontrol grubu kart merkezine tam ortalı, eşit aralıklı; geri/ileri glifi 16 px,
+  tıklama alanı 28×28, oynat 28 px daire.
+- Alt satır/süreler `#9A9AA0`, footer `#8E8E93` ve 11 px.
+- `kanit/dock-demo.mp4`: 15 sn, 1280×720 H.264; büyütme → müzik kartı → kapat →
+  AI limit kartı → kapat sırasını gösterir (Xvfb `:99`, dikey offset 180).

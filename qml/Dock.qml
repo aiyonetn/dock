@@ -35,6 +35,7 @@ Item {
     property string kartKaynak: ""
     property string muzikKaynak: ""
     property real aiMerkezX: 0
+    property Item muzikHucre: null
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
     readonly property int yakinIkon: {
@@ -157,7 +158,11 @@ Item {
                 }
                 onXChanged: aiBildir()
                 onWidthChanged: aiBildir()
-                Component.onCompleted: aiBildir()
+                Component.onCompleted: {
+                    aiBildir()
+                    if (model.kimlik === "muzik.desktop")
+                        kok.muzikHucre = hucre
+                }
                 property real olcekDeger: kok.hedefOlcek(index)
                 property int parlamaSurum: model.parlama
                 property real parParlama: 0
@@ -305,11 +310,14 @@ Item {
         kartKaynak: kok.muzikKaynak
         readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
         readonly property real kendiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 2)
+        readonly property real merkezX: kok.muzikHucre
+            ? satir.x + kok.muzikHucre.x + kok.muzikHucre.width / 2
+            : satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2
         readonly property real hedefY: panelKutu.y - height - 12
         visible: kok.muzikAcik || opacity > 0
         opacity: kok.muzikAcik ? 1 : 0
         x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
-            satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2 - width / 2)))
+            merkezX - width / 2)))
         y: Math.round(hedefY + (kok.muzikAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
