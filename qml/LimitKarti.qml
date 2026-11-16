@@ -40,6 +40,18 @@ Item {
         return Math.max(1, dk) + " dk"
     }
 
+    function claudeMetin() {
+        var c = kart.claude
+        if (!c || c.kaynak === "yok") return "yapılandırılmadı"
+        if (c.kaynak === "suresi_doldu") return "oturum süresi doldu"
+        var p = []
+        p.push(c.session.percent === null
+            ? "Session: veri yok" : "Session %" + Math.round(c.session.percent))
+        p.push(c.weekly.percent === null
+            ? "Weekly: veri yok" : "Weekly %" + Math.round(c.weekly.percent))
+        return p.join(" · ")
+    }
+
     function guncellemeMetni() {
         var yas = Math.max(0, Math.round(kart.simdi - kart.sonGuncelleme))
         if (yas <= 1) return "güncellendi az önce"
@@ -281,10 +293,7 @@ Item {
             GolgeText {
                 anchors.right: parent.right
                 anchors.baseline: claudeAd.baseline
-                text: kart.claudeVar
-                    ? "Session " + Math.round(kart.claude.session.percent) + "% · Weekly "
-                        + Math.round(kart.claude.weekly.percent) + "%"
-                    : "yapılandırılmadı"
+                text: kart.claudeMetin()
                 color: kart.ucuncul
                 font.pixelSize: 11
             }
@@ -297,7 +306,7 @@ Item {
             height: 12
             GolgeText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: kart.guncellemeMetni()
+                text: !limitModel.veriVar ? "veri bekleniyor" : (limitModel.bayat ? "veri gelmedi" : kart.guncellemeMetni())
                 color: kart.ucuncul
                 font.pixelSize: 10
             }

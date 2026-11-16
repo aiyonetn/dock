@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import os
 import subprocess
+import threading
 from hashlib import sha1
 import time
 from pathlib import Path
 
 from PySide6.QtCore import (
+    QAbstractAnimation,
     QEasingCurve,
     QObject,
     QPoint,
@@ -24,7 +26,7 @@ from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from . import ayarlar, ikon
+from . import ayarlar, ikon, x11
 from .limit_model import LimitModel, LimitYonetici
 from .muzik import MuzikModel
 from .model import IkonModel
@@ -80,6 +82,7 @@ class Kopru(QObject):
     kartKonum = Signal(int, int, int, int)
     muzikIstendi = Signal()
     muzikKonum = Signal(int, int, int, int)
+    panelGenislik = Signal(int, int)
 
     def __init__(self, model: IkonModel, uygulamalar: list[Uygulama]) -> None:
         super().__init__()
@@ -94,6 +97,10 @@ class Kopru(QObject):
     @Slot(int, int, int, int)
     def muzik_konumu(self, x: int, y: int, gen: int, yuk: int) -> None:
         self.muzikKonum.emit(x, y, gen, yuk)
+
+    @Slot(int, int)
+    def panel_genislik(self, gen: int, x: int) -> None:
+        self.panelGenislik.emit(gen, x)
 
     @Slot(int)
     def tikla(self, indeks: int) -> None:
@@ -122,6 +129,8 @@ class Kopru(QObject):
 
 
 class Dock(QWidget):
+    pencereDurum = Signal(bool)
+
     def __init__(self, ayar: dict, uygulamalar: list[Uygulama]) -> None:
         bayraklar = Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint | Qt.Tool
         super().__init__(None, bayraklar)
@@ -137,6 +146,7 @@ class Dock(QWidget):
         self.kopru.kartKonum.connect(self._kart_konum_guncelle)
         self.kopru.muzikIstendi.connect(self._muzik_degistir)
         self.kopru.muzikKonum.connect(self._muzik_konum_guncelle)
+        self.kopru.panelGenislik.connect(self._panel_genislik_guncelle)
         self.muzik_model = MuzikModel(self)
         self.limit_model = LimitModel(self)
         self.limit_yonetici = LimitYonetici(self.limit_model, self)
@@ -156,6 +166,17 @@ class Dock(QWidget):
         self._tam: QImage | None = None
         self._gorunur = False
         self._son_icerde = time.monotonic()
+        self._grab_sayisi = 0
+        self._anim_grab = 0
+        self._pencere_mesgul = False
+        self.pencereDurum.connect(self._pencere_guncelle)
+        self._anim_atlandi = 0
+        self._grab_log = None
+        if os.environ.get("DOCK_GRAB_LOG"):
+            try:
+                self._grab_log = open(os.environ["DOCK_GRAB_LOG"], "a", buffering=1)
+            except OSError:
+                self._grab_log = None
 
         self._olcu_hesapla()
         self._pencereleri_kur()
@@ -210,7 +231,7 @@ class Dock(QWidget):
         )
         # Golge gorseli: her karede blur yerine tek dokulu dikdortgen.
         self.saglayici.goruntuler["golge"] = self._golge_uret(
-            self._taban_panel_genislik + 24, self._panel_yukseklik + 24
+            self._taban_panel_genislik + 40, self._panel_yukseklik + 40, 6, 20, 20
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, 14)
@@ -225,6 +246,11 @@ class Dock(QWidget):
         self._fare_zaman.setInterval(50)
         self._fare_zaman.timeout.connect(self._fare_denetle)
         self._fare_zaman.start()
+
+        self._arkaplan_zaman = QTimer(self)
+        self._arkaplan_zaman.setInterval(1000)
+        self._arkaplan_zaman.timeout.connect(self._arkaplan_tazele)
+        self._arkaplan_zaman.start()
 
         self._kart_zaman = QTimer(self)
         self._kart_zaman.setInterval(500)
@@ -267,10 +293,12 @@ class Dock(QWidget):
                 zaman.start()
         elif zaman is not None:
             zaman.stop()
+        self._giris_maskesi_uygula()
 
     @Slot(int, int, int, int)
     def _kart_konum_guncelle(self, x: int, y: int, gen: int, yuk: int) -> None:
         self._kart_rect = (x, y, gen, yuk)
+        self._giris_maskesi_uygula()
         zaman = getattr(self, "_kart_zaman", None)
         if zaman is not None and zaman.isActive():
             self._kart_arkaplan_yenile()
@@ -294,10 +322,12 @@ class Dock(QWidget):
                 zaman.start()
         elif zaman is not None:
             zaman.stop()
+        self._giris_maskesi_uygula()
 
     @Slot(int, int, int, int)
     def _muzik_konum_guncelle(self, x: int, y: int, gen: int, yuk: int) -> None:
         self._muzik_rect = (x, y, gen, yuk)
+        self._giris_maskesi_uygula()
         zaman = getattr(self, "_muzik_zaman", None)
         if zaman is not None and zaman.isActive():
             self._muzik_arkaplan_yenile()
@@ -318,9 +348,16 @@ class Dock(QWidget):
             self.move(self._x, self._y_gorunur)
             self.goster()
             self.show()
+        self._giris_maskesi_uygula()
 
     def _acik_pencereleri_tazele(self) -> None:
-        """Acik uygulama gostergesi: simdilik yalniz Chrome (wmctrl)."""
+        """Chrome acik mi? Sorgu ayri thread'de; UI beklemez."""
+        if self._pencere_mesgul:
+            return
+        self._pencere_mesgul = True
+        threading.Thread(target=self._pencere_oku, daemon=True).start()
+
+    def _pencere_oku(self) -> None:
         acik = False
         try:
             cikti = subprocess.run(
@@ -330,7 +367,6 @@ class Dock(QWidget):
         except (OSError, subprocess.SubprocessError):
             pass
         if not acik:
-            # Pencere yoneticisi yoksa (Xvfb) surec adindan anla.
             try:
                 acik = subprocess.run(
                     ["pgrep", "-f", "google-chrome"],
@@ -338,10 +374,48 @@ class Dock(QWidget):
                     timeout=1.0,
                 ).returncode == 0
             except (OSError, subprocess.SubprocessError):
-                return
+                acik = False
+        self._pencere_mesgul = False
+        self.pencereDurum.emit(acik)
+
+    @Slot(bool)
+    def _pencere_guncelle(self, acik: bool) -> None:
         for indeks, uygulama in enumerate(self.uygulamalar):
             if uygulama.kimlik.startswith("google-chrome"):
                 self.model.calisti_ayarla(indeks, acik)
+
+    def _giris_maskesi_uygula(self) -> None:
+        bolgeler = [
+            (self._panel_x, self._panel_y, self._taban_panel_genislik, self._panel_yukseklik)
+        ]
+        kok = self.gorunum.rootObject()
+        for anahtar, rect in (
+            ("kartAcik", self._kart_rect),
+            ("muzikAcik", self._muzik_rect),
+        ):
+            if rect is None or kok is None or not bool(kok.property(anahtar)):
+                continue
+            x, y, gen, yuk = rect
+            bolgeler.append((x, y, gen, yuk))
+        try:
+            x11.giris_maskesi(int(self.winId()), bolgeler)
+        except Exception:
+            pass
+
+    @Slot(int, int)
+    def _panel_genislik_guncelle(self, gen: int, x: int) -> None:
+        if self._tam is None:
+            return
+        gen = max(1, min(gen, self._tam.width() - max(0, x)))
+        x = max(0, min(x, self._tam.width() - gen))
+        parca = self._tam.copy(
+            QRect(x, self._panel_y, gen, self._panel_yukseklik)
+        )
+        self.saglayici.goruntuler["panel"] = self._bulanik(parca)
+        self._sayac += 1
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("arkaplanPanel", f"image://arkaplan/panel?{self._sayac}")
 
     def _kaydir(self, y: int, sure: int) -> None:
         self._animasyon.stop()
@@ -353,8 +427,13 @@ class Dock(QWidget):
     def goster(self) -> None:
         if self._gorunur:
             return
-        # Pencere hala gizliyken yakala: kendi icerigimizi cekmeyiz.
-        self._arkaplan_yenile()
+        # Gizlenme animasyonu surerken yakalama yok (hayalet olusmasin).
+        if self._animasyon.state() != QAbstractAnimation.Running:
+            self._arkaplan_yenile()
+        elif self._grab_log:
+            self._grab_log.write(
+                f"{time.monotonic():.3f} goster-anim=1 grab={self._grab_sayisi}\n"
+            )
         self._gorunur = True
         self._son_icerde = time.monotonic()
         self._kaydir(self._y_gorunur, 200)
@@ -466,12 +545,34 @@ class Dock(QWidget):
         if kok is not None:
             kok.setProperty("muzikKaynak", f"image://arkaplan/muzikKart?{self._muzik_sayac}")
 
-    def _arkaplan_yenile(self) -> None:
-        """Masaustunu yakalar; yalnizca goster() cagirir (QTimer yok)."""
-        if self._gorunur and self.geometry().intersects(
-            QRect(self._x, self._y_gorunur, self._gen, self._yuk)
-        ):
+    def _arkaplan_tazele(self) -> None:
+        # Gorunurken kendi penceremizi yakalamamak icin yalniz gizliyken
+        # tazelenir; animasyon sirasinda hic yakalanmaz.
+        if self._animasyon.state() == QAbstractAnimation.Running:
+            self._anim_atlandi += 1
+            if self._grab_log:
+                self._grab_log.write(
+                    f"{time.monotonic():.3f} anim=1 grab={self._grab_sayisi} atlandi={self._anim_atlandi}\n"
+                )
             return
+        if not self._gorunur:
+            self._arkaplan_yakala()
+            if self._grab_log:
+                self._grab_log.write(
+                    f"{time.monotonic():.3f} anim=0 grab={self._grab_sayisi}\n"
+                )
+        elif self._grab_log:
+            self._grab_log.write(
+                f"{time.monotonic():.3f} anim=0 gorunur=1 grab={self._grab_sayisi}\n"
+            )
+
+    def _arkaplan_yenile(self) -> None:
+        """Pencere gizliyken yakalar (goster() oncesi)."""
+        if self._gorunur:
+            return
+        self._arkaplan_yakala()
+
+    def _arkaplan_yakala(self) -> None:
         kok = self.gorunum.rootObject()
         if kok is None:
             return
@@ -481,6 +582,7 @@ class Dock(QWidget):
         resim = ekran.grabWindow(0, self._x, self._y_gorunur, self._gen, self._yuk)
         if resim.isNull():
             return
+        self._grab_sayisi += 1
         tam = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
         self._tam = tam
         self._tam_surum += 1

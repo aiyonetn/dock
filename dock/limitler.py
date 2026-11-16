@@ -8,6 +8,7 @@ import shutil
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 _ZAMAN_ASIMI = 10.0
@@ -44,28 +45,34 @@ def _yuzde(deger) -> float | None:
 
 
 # --- Codex -----------------------------------------------------------------
-def _rpc(proc: subprocess.Popen, istek: dict) -> dict:
-    proc.stdin.write(json.dumps(istek) + "\n")
+def _rpc(proc: subprocess.Popen, istek: dict, durum: dict) -> dict:
+    proc.stdin.write((json.dumps(istek) + "\n").encode())
     proc.stdin.flush()
     bitis = datetime.now(timezone.utc).timestamp() + _ZAMAN_ASIMI
     while True:
+        tampon = durum.get("tampon", b"")
+        while b"\n" in tampon:
+            satir, tampon = tampon.split(b"\n", 1)
+            durum["tampon"] = tampon
+            try:
+                cevap = json.loads(satir.decode("utf-8", "replace"))
+            except ValueError:
+                continue
+            if cevap.get("id") == istek.get("id"):
+                if "error" in cevap:
+                    raise RuntimeError(str(cevap["error"]))
+                return cevap.get("result") or {}
+        durum["tampon"] = tampon
         kalan = bitis - datetime.now(timezone.utc).timestamp()
         if kalan <= 0:
             raise TimeoutError("codex app-server yanit vermedi")
         hazir, _, _ = select.select([proc.stdout], [], [], kalan)
         if not hazir:
             raise TimeoutError("codex app-server yanit vermedi")
-        satir = proc.stdout.readline()
-        if not satir:
+        parca = os.read(proc.stdout.fileno(), 65536)
+        if not parca:
             raise RuntimeError("codex app-server kapandi")
-        try:
-            cevap = json.loads(satir)
-        except ValueError:
-            continue
-        if cevap.get("id") == istek.get("id"):
-            if "error" in cevap:
-                raise RuntimeError(str(cevap["error"]))
-            return cevap.get("result") or {}
+        durum["tampon"] = tampon + parca
 
 
 def _codex_oku() -> dict:
@@ -76,9 +83,8 @@ def _codex_oku() -> dict:
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
-        text=True,
-        bufsize=1,
     )
+    durum = {"tampon": b""}
     try:
         _rpc(
             proc,
@@ -88,15 +94,19 @@ def _codex_oku() -> dict:
                 "method": "initialize",
                 "params": {"clientInfo": {"name": "dock", "version": "0.1"}},
             },
+            durum,
         )
         proc.stdin.write(
-            json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}) + "\n"
+            (json.dumps({"jsonrpc": "2.0", "method": "initialized", "params": {}}) + "\n").encode()
         )
         proc.stdin.flush()
-        hesap = _rpc(proc, {"jsonrpc": "2.0", "id": 2, "method": "account/read", "params": {}})
+        hesap = _rpc(
+            proc, {"jsonrpc": "2.0", "id": 2, "method": "account/read", "params": {}}, durum
+        )
         limitler = _rpc(
             proc,
             {"jsonrpc": "2.0", "id": 3, "method": "account/rateLimits/read", "params": {}},
+            durum,
         )
     finally:
         try:
@@ -127,6 +137,30 @@ def _codex_oku() -> dict:
 
 
 # --- Claude ----------------------------------------------------------------
+def _zaman_bul(veri, derinlik: int = 0):
+    """credentials icinde expiresAt/expires_at ara; epoch (sn) dondur."""
+    if derinlik > 6:
+        return None
+    if isinstance(veri, dict):
+        for anahtar, deger in veri.items():
+            if anahtar.lower() in ("expiresat", "expires_at", "expiry"):
+                if isinstance(deger, (int, float)):
+                    sayi = int(deger)
+                    return sayi // 1000 if sayi > 2e10 else sayi
+                deger = _epoch(deger)
+                if deger is not None:
+                    return deger
+            bulunan = _zaman_bul(deger, derinlik + 1)
+            if bulunan:
+                return bulunan
+    elif isinstance(veri, list):
+        for deger in veri:
+            bulunan = _zaman_bul(deger, derinlik + 1)
+            if bulunan:
+                return bulunan
+    return None
+
+
 def _token_bul(veri, derinlik: int = 0):
     if derinlik > 6:
         return None
@@ -174,6 +208,9 @@ def _claude_oku() -> dict:
     token = _token_bul(kimlik)
     if not token:
         return _elle("claude") or _bos()
+    sona_erme = _zaman_bul(kimlik)
+    if sona_erme is not None and sona_erme <= int(datetime.now(timezone.utc).timestamp()):
+        return _bos("suresi_doldu")
 
     istek = Request(
         "https://api.anthropic.com/api/oauth/usage?at_wall=1&skip_spend=1",
@@ -186,6 +223,10 @@ def _claude_oku() -> dict:
     try:
         with urlopen(istek, timeout=8) as cevap:
             veri = json.loads(cevap.read().decode("utf-8"))
+    except HTTPError as hata:
+        if hata.code in (401, 403):
+            return _bos("suresi_doldu")
+        return _bos()
     except Exception:
         return _bos()
 
@@ -220,7 +261,7 @@ def oku() -> dict:
     try:
         sonuc["codex"] = _codex_oku()
     except Exception:
-        sonuc["codex"] = _bos()
+        sonuc["codex"] = _bos("hata")
     try:
         sonuc["claude"] = _claude_oku()
     except Exception:

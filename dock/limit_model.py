@@ -32,6 +32,11 @@ class LimitModel(QAbstractListModel):
     def __init__(self, parent=None):
         super().__init__(parent)
         self._veri = {"codex": limitler._bos(), "claude": limitler._bos()}
+        self._veri_var = False
+        self._bayat = False
+
+    veriVar = Property(bool, lambda self: self._veri_var, notify=veriDegisti)
+    bayat = Property(bool, lambda self: self._bayat, notify=veriDegisti)
 
     def _saglayici(self, ad: str) -> dict:
         return self._veri.get(ad) or limitler._bos()
@@ -78,7 +83,14 @@ class LimitModel(QAbstractListModel):
 
     @Slot(object)
     def guncelle(self, veri: dict) -> None:
-        self._veri = veri or {}
+        veri = veri or {}
+        if (veri.get("codex") or {}).get("kaynak") == "hata" and self._veri_var:
+            veri["codex"] = self._veri.get("codex") or limitler._bos()
+            self._bayat = True
+        else:
+            self._bayat = False
+        self._veri = veri
+        self._veri_var = True
         self.dataChanged.emit(self.index(0, 0), self.index(1, 0), list(self.roleNames().keys()))
         self.veriDegisti.emit()
 

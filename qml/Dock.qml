@@ -76,10 +76,10 @@ Item {
     // maliyeti cikariyordu. Artik tek dokulu dikdortgen.
     Image {
         source: golgeUrl
-        x: panelKutu.x - 10
-        y: panelKutu.y + 2
-        width: panelKutu.width + 20
-        height: panelKutu.height + 22
+        x: panelKutu.x - 20
+        y: panelKutu.y - 20
+        width: panelKutu.width + 40
+        height: panelKutu.height + 40
         fillMode: Image.Stretch
         smooth: true
     }
@@ -92,6 +92,13 @@ Item {
         y: kok.height - kok.altPay - height
         Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
         Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+        onWidthChanged: panelYenile.restart()
+
+        Timer {
+            id: panelYenile
+            interval: 170
+            onTriggered: kopru.panel_genislik(Math.round(panelKutu.width), Math.round(panelKutu.x))
+        }
 
         // Arkasi bulanik masaustu (Python'da 12 kat kucult/buyut).
         Image {

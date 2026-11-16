@@ -10,3 +10,9 @@ muzik karti kapali, 20 sn: CPU %2.25
 seffaf: AI karti acik, 30 sn: CPU %1.2
 seffaf: muzik karti acik, 20 sn: CPU %2.2
 seffaf: kartlar kapali, 20 sn: CPU %0.35
+
+A3: xdotool click 700,650 -> arkadaki TikTest penceresi tik aldi (200,90)
+A5: 11 animasyon olayi; animasyon sirasinda yeni grab=0 (grab sayaci 1'de sabit)
+A2: gorunur pencerede kendi karesini yakalamamak icin tazeleme yalniz gizliyken/reveal'de; compositor yok
+
+C19: maskesiz kart acik, 20 sn: CPU %1.15
