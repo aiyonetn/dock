@@ -23,3 +23,5 @@ V10: uc simge hover: sol/sag tasma = 0 px (panel max 1439.6, simge sol 16 / sag 
 
 Font: kart kapali, 12 sn: CPU %0.42
 Font: kart acik, 12 sn: CPU %1.58
+V13 kapak: yeni artUrl -> islem 1; ayni parca 5 tekrar -> islem 0
+V13 track gecisi (mpv IPC): QTimer 50 ms max 66.9 ms, p95 61.9 ms (<100)
