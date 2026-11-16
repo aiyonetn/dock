@@ -14,6 +14,7 @@ from PySide6.QtCore import (
     QTimer,
     QUrl,
     Qt,
+    Signal,
     Slot,
 )
 from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath
@@ -22,6 +23,7 @@ from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
 from . import ayarlar, ikon
+from .limit_model import LimitModel, LimitYonetici
 from .model import IkonModel
 from .uygulamalar import (
     Uygulama,
@@ -41,9 +43,9 @@ _PANEL_DIKEY_BOSLUK = 12
 _ALT_PAY = 12
 # Pencere opak: buyuyen ikonlar icin panel ustunde pay, golge icin altta 10 px.
 # Kalan alan masaustu goruntusuyle doldurulur; saydamlik/compositor gerekmez.
-_PENCERE_UST_PAY = 80
+_PENCERE_UST_PAY = 260
 # Yatay pay: buyuyen ikonlar komsularini itince panel genisler, kirpilma olmaz.
-_PENCERE_YAN_PAY = 120
+_PENCERE_YAN_PAY = 80
 
 
 class ArkaplanSaglayici(QQuickImageProvider):
@@ -70,6 +72,9 @@ class ArkaplanSaglayici(QQuickImageProvider):
 class Kopru(QObject):
     """QML'den gelen tiklama isteklerini isler."""
 
+    kartIstendi = Signal()
+    kartKapat = Signal()
+
     def __init__(self, model: IkonModel, uygulamalar: list[Uygulama]) -> None:
         super().__init__()
         self.model = model
@@ -81,6 +86,10 @@ class Kopru(QObject):
         if not 0 <= indeks < len(self.uygulamalar):
             return
         uygulama = self.uygulamalar[indeks]
+        if uygulama.kimlik == "ai-limit.desktop":
+            self.kartIstendi.emit()
+            return
+        self.kartKapat.emit()
         surec = baslat(uygulama)
         if surec is None:
             self.model.parlama_tetikle(indeks, "başlatılamadı")
@@ -106,6 +115,10 @@ class Dock(QWidget):
         self.uygulamalar = uygulamalar
         self.model = IkonModel(uygulamalar, self)
         self.kopru = Kopru(self.model, uygulamalar)
+        self.kopru.kartIstendi.connect(self._kart_degistir)
+        self.kopru.kartKapat.connect(lambda: self._kart_ayarla(False))
+        self.limit_model = LimitModel(self)
+        self.limit_yonetici = LimitYonetici(self.limit_model, self)
         self.saglayici = ArkaplanSaglayici()
         self._sayac = 0
         self._gorunur = False
@@ -156,6 +169,7 @@ class Dock(QWidget):
         baglam.setContextProperty("kopru", self.kopru)
         baglam.setContextProperty("ayar", self.ayar)
         baglam.setContextProperty("ikonModel", self.model)
+        baglam.setContextProperty("limitModel", self.limit_model)
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
@@ -184,6 +198,16 @@ class Dock(QWidget):
 
         self._animasyon = QPropertyAnimation(self, b"pos", self)
         self._animasyon.setEasingCurve(QEasingCurve.OutCubic)
+
+    def _kart_ayarla(self, acik: bool) -> None:
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("kartAcik", acik)
+
+    def _kart_degistir(self) -> None:
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("kartAcik", not bool(kok.property("kartAcik")))
 
     # --- konum / gorunurluk ------------------------------------------------
     def _ilk_konum(self) -> None:
@@ -372,6 +396,12 @@ def calistir() -> int:
     if not secili:
         print("HATA: sabitlenen uygulamalarin hicbiri bulunamadi", flush=True)
         return 1
+    ai_ikon = KOK / "assets" / "ai-limit.svg"
+    ai_uygulama = Uygulama(kimlik="ai-limit.desktop", ad="AI Limit", ikon=str(ai_ikon))
+    islenmis_ai = ikon.hazirla(str(ai_ikon))
+    if islenmis_ai:
+        ai_uygulama.ikon = islenmis_ai
+        secili.append(ai_uygulama)
 
     pencere = Dock(ayar, secili)
     pencere.show()

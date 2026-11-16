@@ -12,6 +12,7 @@ class IkonModel(QAbstractListModel):
     RolCalisti = Qt.UserRole + 3
     RolParlama = Qt.UserRole + 4
     RolHata = Qt.UserRole + 5
+    RolKimlik = Qt.UserRole + 6
 
     def __init__(self, uygulamalar: list[Uygulama], parent=None):
         super().__init__(parent)
@@ -27,6 +28,7 @@ class IkonModel(QAbstractListModel):
             self.RolCalisti: QByteArray(b"calisti"),
             self.RolParlama: QByteArray(b"parlama"),
             self.RolHata: QByteArray(b"hata"),
+            self.RolKimlik: QByteArray(b"kimlik"),
         }
 
     def rowCount(self, parent=QModelIndex()):
@@ -46,6 +48,8 @@ class IkonModel(QAbstractListModel):
             return self._parlama[i]
         if rol == self.RolHata:
             return self._hata[i]
+        if rol == self.RolKimlik:
+            return self.uygulamalar[i].kimlik
         return None
 
     @Slot(int, bool)

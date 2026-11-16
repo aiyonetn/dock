@@ -30,6 +30,8 @@ Item {
 
     property real fareX: -1
     property int ipucu: -1
+    property bool kartAcik: false
+    property real aiMerkezX: 0
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
     readonly property int yakinIkon: {
@@ -157,6 +159,13 @@ Item {
                 z: 1 + Math.round(olcekDeger * 10)
 
                 Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+                function aiBildir() {
+                    if (model.kimlik === "ai-limit.desktop")
+                        kok.aiMerkezX = satir.x + hucre.x + hucre.width / 2
+                }
+                onXChanged: aiBildir()
+                onWidthChanged: aiBildir()
+                Component.onCompleted: aiBildir()
                 property real olcekDeger: kok.hedefOlcek(index)
                 property int parlamaSurum: model.parlama
                 property real parParlama: 0
@@ -262,5 +271,26 @@ Item {
                 }
             }
         }
+    }
+
+    // Kart acikken panel ustune tiklamak kapatir; ikonlar etkilenmez.
+    MouseArea {
+        visible: kok.kartAcik
+        z: 30
+        anchors.top: parent.top
+        anchors.left: parent.left
+        anchors.right: parent.right
+        anchors.bottom: panelKutu.top
+        onClicked: kok.kartAcik = false
+    }
+
+    LimitKarti {
+        id: kart
+        z: 31
+        visible: kok.kartAcik
+        readonly property real sonGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
+        x: Math.max(6, Math.min(kok.width - width - 6,
+            satir.x + satir.width - sonGenislik / 2 - width / 2))
+        y: panelKutu.y - height - 12
     }
 }
