@@ -9,7 +9,7 @@ Item {
     property string vurgu: "#8fb4ff"
 
     // Referans olculeri: ikon 56, panel 76, yan 12, ara 8, alt bosluk 10.
-    readonly property real ikonBoyut: ayar ? ayar.iconSize : 84
+    readonly property real ikonBoyut: ayar ? ayar.iconSize : 64
     readonly property real buyutmeCarpan: ayar ? ayar.buyutme : 1.9
     readonly property real bosluk: 12
     readonly property real yanBosluk: 16
@@ -220,7 +220,9 @@ Item {
 
                 Image {
                     visible: model.kimlik === "muzik.desktop" && muzikModel.kapak !== ""
-                    anchors.fill: kutu
+                    anchors.centerIn: kutu
+                    width: kutu.width * 0.8
+                    height: width
                     source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
@@ -354,7 +356,7 @@ Item {
         id: kart
         z: 31
         readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
-        readonly property real hedefY: panelKutu.y - height - 80
+        readonly property real hedefY: panelKutu.y - height - 16
         kartKaynak: kok.kartKaynak
         visible: kok.kartAcik || opacity > 0
         opacity: kok.kartAcik ? 1 : 0
@@ -379,7 +381,7 @@ Item {
         readonly property real merkezX: kok.muzikHucre
             ? satir.x + kok.muzikHucre.x + kok.muzikHucre.width / 2
             : satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2
-        readonly property real hedefY: panelKutu.y - height - 80
+        readonly property real hedefY: panelKutu.y - height - 16
         visible: kok.muzikAcik || opacity > 0
         opacity: kok.muzikAcik ? 1 : 0
         x: Math.round(Math.max(12 - kok.pencereSol,

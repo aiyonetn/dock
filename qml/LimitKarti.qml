@@ -3,7 +3,7 @@ import QtQuick
 Item {
     id: kart
     width: 320
-    height: claudeVar ? 282 : 212
+    height: claudeVar ? 306 : 236
 
     property var codex: limitModel.codex
     property var claude: limitModel.claude
@@ -20,8 +20,8 @@ Item {
 
     component Halka: Item {
         id: halka
-        width: 72
-        height: 92
+        width: 92
+        height: 114
         property real yuzde: -1
         property string etiket: ""
         property real reset: 0
@@ -45,7 +45,7 @@ Item {
 
         Canvas {
             id: halkaTuval
-            width: 64; height: 64
+            width: 84; height: 84
             property real yuzde: halka.yuzde
             onYuzdeChanged: requestPaint()
             Connections {
@@ -54,7 +54,7 @@ Item {
             }
             onPaint: {
                 var c = getContext("2d"); c.reset()
-                var m = 32, r = 28
+                var m = 42, r = 39
                 c.lineWidth = 6
                 c.strokeStyle = "#2C2C2E"
                 c.beginPath(); c.arc(m, m, r, 0, Math.PI * 2); c.stroke()
@@ -77,7 +77,7 @@ Item {
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 66
+            y: 86
             text: halka.etiket
             color: kart.ikincil
             font.pixelSize: 11
@@ -164,8 +164,8 @@ Item {
 
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 54
-        spacing: 28
+        y: 50
+        spacing: 24
         Halka { etiket: "Oturum"; yuzde: kart.codexDeger("session"); reset: kart.codexReset("session") }
         Halka { etiket: "Hafta"; yuzde: kart.codexDeger("weekly"); reset: kart.codexReset("weekly") }
     }
@@ -183,8 +183,8 @@ Item {
     Row {
         visible: kart.claudeVar
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 146
-        spacing: 28
+        y: 170
+        spacing: 24
         Halka {
             etiket: "Claude Oturum"
             yuzde: kart.claudeDeger("session")
@@ -199,7 +199,7 @@ Item {
 
     Text {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: kart.claudeVar ? 246 : 176
+        y: kart.claudeVar ? 270 : 200
         text: !limitModel.veriVar ? "veri bekleniyor"
             : (limitModel.bayat ? "veri gelmedi" : kart.guncellemeMetni())
         color: kart.ucuncul
