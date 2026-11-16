@@ -262,6 +262,42 @@ Item {
                     }
                 }
 
+                // AI oturum halkasi: ikonun 2 px disinda, yuzde kadar dolu.
+                Canvas {
+                    id: aiHalka
+                    visible: model.kimlik === "ai-limit.desktop" && aiHalka.yuzde >= 0
+                    anchors.centerIn: kutu
+                    width: kutu.width * 0.9
+                    height: width
+                    property real yuzde: {
+                        var p = limitModel.codex && limitModel.codex.session
+                            ? limitModel.codex.session.percent : null
+                        return (p === null || p === undefined) ? -1 : p
+                    }
+                    onYuzdeChanged: requestPaint()
+                    Connections {
+                        target: limitModel
+                        function onVeriDegisti() { aiHalka.requestPaint() }
+                    }
+                    onPaint: {
+                        var c = getContext("2d")
+                        c.reset()
+                        var m = width / 2
+                        var r = m - 2
+                        c.lineWidth = 2
+                        c.strokeStyle = "#ffffff1a"
+                        c.beginPath(); c.arc(m, m, r, 0, Math.PI * 2); c.stroke()
+                        if (aiHalka.yuzde >= 0) {
+                            c.strokeStyle = aiHalka.yuzde < 50 ? "#F7F7F8"
+                                : aiHalka.yuzde < 80 ? "#F5C542" : "#F05B5B"
+                            c.beginPath()
+                            c.arc(m, m, r, -Math.PI / 2,
+                                -Math.PI / 2 + Math.PI * 2 * Math.min(1, aiHalka.yuzde / 100))
+                            c.stroke()
+                        }
+                    }
+                }
+
                 Rectangle {
                     anchors.centerIn: kutu
                     width: kutu.width * 0.78
