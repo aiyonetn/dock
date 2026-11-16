@@ -24,3 +24,15 @@ Dock'un sonundaki kıvılcım ikonuna tıklayınca ChatGPT/Codex ve Claude için
   8–12× küçült/büyüt blur ile üretilir; karta `%55`, panele `%80` `#0A0A0A`
   tonu bindirilir. Kart açıkken fon 500 ms'de bir yeniden kompozit edilir,
   kapalıyken yakalama yapılmaz.
+
+## Müzik kartı
+
+Dock'taki nota ikonuna tıklayınca "şimdi çalıyor" kartı açılır: albüm kapağı
+(yoksa çizilmiş nota glifi), parça/sanatçı/albüm, 4 px ilerleme çubuğu, süreler
+ve geri / oynat-duraklat / ileri düğmeleri.
+
+- Gerçek oynatıcı varsa `org.mpris.MediaPlayer2.*` QtDBus arayüzünden
+  Metadata/PlaybackStatus/Position okunur; düğmeler PlayPause/Next/Previous çağırır.
+- Oynatıcı yoksa **demo modu** çalışır ("Midnight Drive · Demo", 3:48) ve kartın
+  alt satırında `demo · oynatıcı yok` yazar; gerçek çalıyor izlenimi verilmez.
+- AI limit ve müzik kartlarından yalnızca biri açık olabilir; dışına tıklamak kapatır.

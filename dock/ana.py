@@ -26,6 +26,7 @@ from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
 from . import ayarlar, ikon
 from .limit_model import LimitModel, LimitYonetici
+from .muzik import MuzikModel
 from .model import IkonModel
 from .uygulamalar import (
     Uygulama,
@@ -47,7 +48,7 @@ _ALT_PAY = 12
 # Kalan alan masaustu goruntusuyle doldurulur; saydamlik/compositor gerekmez.
 _PENCERE_UST_PAY = 260
 # Yatay pay: buyuyen ikonlar komsularini itince panel genisler, kirpilma olmaz.
-_PENCERE_YAN_PAY = 80
+_PENCERE_YAN_PAY = 38
 
 
 class ArkaplanSaglayici(QQuickImageProvider):
@@ -77,6 +78,8 @@ class Kopru(QObject):
     kartIstendi = Signal()
     kartKapat = Signal()
     kartKonum = Signal(int, int, int, int)
+    muzikIstendi = Signal()
+    muzikKonum = Signal(int, int, int, int)
 
     def __init__(self, model: IkonModel, uygulamalar: list[Uygulama]) -> None:
         super().__init__()
@@ -88,6 +91,10 @@ class Kopru(QObject):
     def kart_konumu(self, x: int, y: int, gen: int, yuk: int) -> None:
         self.kartKonum.emit(x, y, gen, yuk)
 
+    @Slot(int, int, int, int)
+    def muzik_konumu(self, x: int, y: int, gen: int, yuk: int) -> None:
+        self.muzikKonum.emit(x, y, gen, yuk)
+
     @Slot(int)
     def tikla(self, indeks: int) -> None:
         if not 0 <= indeks < len(self.uygulamalar):
@@ -95,6 +102,9 @@ class Kopru(QObject):
         uygulama = self.uygulamalar[indeks]
         if uygulama.kimlik == "ai-limit.desktop":
             self.kartIstendi.emit()
+            return
+        if uygulama.kimlik == "muzik.desktop":
+            self.muzikIstendi.emit()
             return
         self.kartKapat.emit()
         surec = baslat(uygulama)
@@ -123,8 +133,11 @@ class Dock(QWidget):
         self.model = IkonModel(uygulamalar, self)
         self.kopru = Kopru(self.model, uygulamalar)
         self.kopru.kartIstendi.connect(self._kart_degistir)
-        self.kopru.kartKapat.connect(lambda: self._kart_ayarla(False))
+        self.kopru.kartKapat.connect(self._kartlari_kapat)
         self.kopru.kartKonum.connect(self._kart_konum_guncelle)
+        self.kopru.muzikIstendi.connect(self._muzik_degistir)
+        self.kopru.muzikKonum.connect(self._muzik_konum_guncelle)
+        self.muzik_model = MuzikModel(self)
         self.limit_model = LimitModel(self)
         self.limit_yonetici = LimitYonetici(self.limit_model, self)
         self._kart_bekle = False
@@ -133,6 +146,9 @@ class Dock(QWidget):
         self._sayac = 0
         self._kart_sayac = 0
         self._kart_hash = ""
+        self._muzik_sayac = 0
+        self._muzik_hash = ""
+        self._muzik_rect: tuple[int, int, int, int] | None = None
         self._kart_rect: tuple[int, int, int, int] | None = None
         self._tam: QImage | None = None
         self._gorunur = False
@@ -184,6 +200,7 @@ class Dock(QWidget):
         baglam.setContextProperty("ayar", self.ayar)
         baglam.setContextProperty("ikonModel", self.model)
         baglam.setContextProperty("limitModel", self.limit_model)
+        baglam.setContextProperty("muzikModel", self.muzik_model)
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
@@ -194,6 +211,7 @@ class Dock(QWidget):
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 207, 7)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -208,6 +226,10 @@ class Dock(QWidget):
         self._kart_zaman = QTimer(self)
         self._kart_zaman.setInterval(500)
         self._kart_zaman.timeout.connect(self._kart_arkaplan_yenile)
+
+        self._muzik_zaman = QTimer(self)
+        self._muzik_zaman.setInterval(500)
+        self._muzik_zaman.timeout.connect(self._muzik_arkaplan_yenile)
 
         self._surec_zaman = QTimer(self)
         self._surec_zaman.setInterval(1500)
@@ -225,7 +247,13 @@ class Dock(QWidget):
             self._kart_bekle = True
             self._kart_ayarla(True)
 
+    def _kartlari_kapat(self) -> None:
+        self._kart_ayarla(False)
+        self._muzik_ayarla(False)
+
     def _kart_ayarla(self, acik: bool) -> None:
+        if acik:
+            self._muzik_ayarla(False)
         kok = self.gorunum.rootObject()
         if kok is not None:
             kok.setProperty("kartAcik", acik)
@@ -244,10 +272,34 @@ class Dock(QWidget):
         if zaman is not None and zaman.isActive():
             self._kart_arkaplan_yenile()
 
+    def _muzik_degistir(self) -> None:
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            self._muzik_ayarla(not bool(kok.property("muzikAcik")))
+
+    def _muzik_ayarla(self, acik: bool) -> None:
+        if acik:
+            self._kart_ayarla(False)
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("muzikAcik", acik)
+        zaman = getattr(self, "_muzik_zaman", None)
+        if acik:
+            self._muzik_arkaplan_yenile()
+        elif zaman is not None:
+            zaman.stop()
+
+    @Slot(int, int, int, int)
+    def _muzik_konum_guncelle(self, x: int, y: int, gen: int, yuk: int) -> None:
+        self._muzik_rect = (x, y, gen, yuk)
+        zaman = getattr(self, "_muzik_zaman", None)
+        if zaman is not None and zaman.isActive():
+            self._muzik_arkaplan_yenile()
+
     def _kart_degistir(self) -> None:
         kok = self.gorunum.rootObject()
         if kok is not None:
-            kok.setProperty("kartAcik", not bool(kok.property("kartAcik")))
+            self._kart_ayarla(not bool(kok.property("kartAcik")))
 
     # --- konum / gorunurluk ------------------------------------------------
     def _ilk_konum(self) -> None:
@@ -382,6 +434,24 @@ class Dock(QWidget):
         )
         return kucuk.scaled(gen, yuk, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
+    def _muzik_arkaplan_yenile(self) -> None:
+        if self._tam is None or self._muzik_rect is None:
+            return
+        x, y, gen, yuk = self._muzik_rect
+        x = max(0, min(x, self._tam.width() - gen))
+        y = max(0, min(y, self._tam.height() - yuk))
+        parca = self._tam.copy(QRect(x, y, gen, yuk))
+        goruntu = self._cam(parca, 10, 140, 14)
+        ozet = sha1(bytes(goruntu.constBits())).hexdigest()
+        if ozet == self._muzik_hash:
+            return
+        self._muzik_hash = ozet
+        self.saglayici.goruntuler["muzikKart"] = goruntu
+        self._muzik_sayac += 1
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("muzikKaynak", f"image://arkaplan/muzikKart?{self._muzik_sayac}")
+
     def _arkaplan_yenile(self) -> None:
         """Masaustunu yakalar; yalnizca goster() cagirir (QTimer yok)."""
         if self._gorunur and self.geometry().intersects(
@@ -462,6 +532,12 @@ def calistir() -> int:
     if not secili:
         print("HATA: sabitlenen uygulamalarin hicbiri bulunamadi", flush=True)
         return 1
+    muzik_ikon = KOK / "assets" / "muzik.svg"
+    muzik_uygulama = Uygulama(kimlik="muzik.desktop", ad="Müzik", ikon=str(muzik_ikon))
+    islenmis_muzik = ikon.hazirla(str(muzik_ikon))
+    if islenmis_muzik:
+        muzik_uygulama.ikon = islenmis_muzik
+        secili.append(muzik_uygulama)
     ai_ikon = KOK / "assets" / "ai-limit.svg"
     ai_uygulama = Uygulama(kimlik="ai-limit.desktop", ad="AI Limit", ikon=str(ai_ikon))
     islenmis_ai = ikon.hazirla(str(ai_ikon))

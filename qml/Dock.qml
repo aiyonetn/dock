@@ -31,7 +31,9 @@ Item {
     property real fareX: -1
     property int ipucu: -1
     property bool kartAcik: false
+    property bool muzikAcik: false
     property string kartKaynak: ""
+    property string muzikKaynak: ""
     property real aiMerkezX: 0
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
@@ -64,7 +66,7 @@ Item {
         anchors.fill: parent
         source: kok.arkaplanTam
         fillMode: Image.Stretch
-        cache: false
+        cache: true
         smooth: true
     }
 
@@ -96,7 +98,7 @@ Item {
             anchors.fill: parent
             source: kok.arkaplanPanel
             fillMode: Image.Stretch
-            cache: false
+            cache: true
         }
 
         Rectangle {
@@ -265,26 +267,50 @@ Item {
 
     // Kart acikken panel ustune tiklamak kapatir; ikonlar etkilenmez.
     MouseArea {
-        visible: kok.kartAcik
+        visible: kok.kartAcik || kok.muzikAcik
         z: 30
         anchors.top: parent.top
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: panelKutu.top
-        onClicked: kok.kartAcik = false
+        onClicked: {
+            kok.kartAcik = false
+            kok.muzikAcik = false
+            kopru.kartKapat()
+        }
     }
 
     LimitKarti {
         id: kart
         z: 31
-        readonly property real sonGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
+        readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
         readonly property real hedefY: panelKutu.y - height - 12
         kartKaynak: kok.kartKaynak
         visible: kok.kartAcik || opacity > 0
         opacity: kok.kartAcik ? 1 : 0
         x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
-            satir.x + satir.width - sonGenislik / 2 - width / 2)))
+            satir.x + satir.width - aiGenislik / 2 - width / 2)))
         y: Math.round(hedefY + (kok.kartAcik ? 0 : 6))
+        Behavior on opacity {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+        Behavior on y {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+    }
+
+    MusicKarti {
+        id: muzikKart
+        z: 31
+        kartKaynak: kok.muzikKaynak
+        readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
+        readonly property real kendiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 2)
+        readonly property real hedefY: panelKutu.y - height - 12
+        visible: kok.muzikAcik || opacity > 0
+        opacity: kok.muzikAcik ? 1 : 0
+        x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
+            satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2 - width / 2)))
+        y: Math.round(hedefY + (kok.muzikAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
         }

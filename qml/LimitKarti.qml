@@ -82,7 +82,7 @@ Item {
         anchors.fill: parent
         source: kart.kartKaynak
         fillMode: Image.Stretch
-        cache: false
+        cache: true
         smooth: true
     }
 
