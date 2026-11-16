@@ -99,10 +99,22 @@ ve geri / oynat-duraklat / ileri düğmeleri.
 - `kanit/dock-demo.mp4`: 15 sn, 1280×720 H.264; büyütme → müzik kartı → kapat →
   AI limit kartı → kapat sırasını gösterir (Xvfb `:99`, dikey offset 180).
 
-### Depo düzeni
+## v9 düzeltmeleri
 
-- `dock/` — Python tarafı (ikon bulma/ölçekleme, limit verisi, MPRIS, ayarlar)
-- `qml/` — panel ve kartların QML'i
-- `refs/` — tasarım referans kareleri, `assets/` — SVG simgeler
-- `gorevler/` — geliştirme görev tanımları, `olcum/` — akıcılık ölçüm betiği
-- `kanit/` — test kanıtları (ekran görüntüleri, demo videosu, ölçüm çıktısı)
+- Panel gölgesi 20 px iç payla üretilir (sert plaka yok); panel camı genişlik
+  değişiminde `_tam`dan yeniden üretilir, esneme olmaz.
+- Giriş maskesi X11 `ShapeInput` ile yalnız panel + açık kartı kapsar; dock
+  üstündeki boş şerit tıklamayı arkadaki pencereye geçirir.
+- Otomatik gizlenme animasyonu sırasında ekran yakalama yapılmaz.
+- Codex stdout satır tamponu; hata/timeout'ta son iyi veri + `veri gelmedi`.
+- Claude'da kimlik yok → `yapılandırılmadı`, süresi dolmuş → `oturum süresi doldu`;
+  kısmi elle veride eksik alan `veri yok` yazar.
+- MPRIS'te çalan oynatıcı seçilir, servis kaybolunca demo moduna dönülür.
+- Panel tonu %59'a çekildi; komşu büyütme 0.65/0.25 oranıyla azalır; müzik/AI
+  grubu arasında 1 px ayırıcı; açık uygulama noktası 6 px.
+- AI kartında `Oturum/Hafta`, en küçük yazı 11 px, `v0.1` kaldırıldı.
+- Kart maskesi QML'den kaldırıldı (Python kompoziti zaten yuvarlatılmış);
+  kart açıkken CPU %1.15.
+- Gerçek saydamlık (picom) denendi: sistemde `picom`/`compton` yok, `sudo`
+  olmadan kurulum yapılamıyor; AppImage indirilemedi. Bu nedenle kompozit cam
+  tekniği korunuyor.

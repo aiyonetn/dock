@@ -1,5 +1,4 @@
 import QtQuick
-import Qt5Compat.GraphicalEffects
 
 Item {
     id: kart
@@ -38,6 +37,18 @@ Item {
         if (gun > 0) return gun + " gün" + (sa > 0 ? " " + sa + " sa" : "")
         if (sa > 0) return sa + " sa" + (dk > 0 ? " " + dk + " dk" : "")
         return Math.max(1, dk) + " dk"
+    }
+
+    function claudeMetin() {
+        var c = kart.claude
+        if (!c || c.kaynak === "yok") return "yapılandırılmadı"
+        if (c.kaynak === "suresi_doldu") return "oturum süresi doldu"
+        var p = []
+        p.push(c.session.percent === null
+            ? "Session: veri yok" : "Session %" + Math.round(c.session.percent))
+        p.push(c.weekly.percent === null
+            ? "Weekly: veri yok" : "Weekly %" + Math.round(c.weekly.percent))
+        return p.join(" · ")
     }
 
     function guncellemeMetni() {
@@ -80,26 +91,11 @@ Item {
 
     // Kompozit cam; kartin yuvarlak koselerine maskelenir.
     Image {
-        id: camKaynak
         anchors.fill: parent
         source: kart.kartKaynak
         fillMode: Image.Stretch
         cache: true
         smooth: true
-        visible: false
-    }
-    Rectangle {
-        id: camMaske
-        anchors.fill: parent
-        radius: 14
-        color: "white"
-        layer.enabled: true
-        visible: false
-    }
-    OpacityMask {
-        anchors.fill: parent
-        source: camKaynak
-        maskSource: camMaske
     }
 
     Rectangle {
@@ -163,7 +159,7 @@ Item {
                 height: 16
                 GolgeText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Session"
+                    text: "Oturum"
                     color: kart.ikincil
                     font.pixelSize: 11
                 }
@@ -199,7 +195,7 @@ Item {
                 text: kart.codex.session.percent === null ? "—"
                     : kart.kalan(kart.codex.session.reset)
                 color: kart.ucuncul
-                font.pixelSize: 10
+                font.pixelSize: 11
             }
         }
 
@@ -214,7 +210,7 @@ Item {
                 height: 16
                 GolgeText {
                     anchors.verticalCenter: parent.verticalCenter
-                    text: "Weekly"
+                    text: "Hafta"
                     color: kart.ikincil
                     font.pixelSize: 11
                 }
@@ -250,7 +246,7 @@ Item {
                 text: kart.codex.weekly.percent === null ? "—"
                     : kart.kalan(kart.codex.weekly.reset)
                 color: kart.ucuncul
-                font.pixelSize: 10
+                font.pixelSize: 11
             }
         }
 
@@ -281,10 +277,7 @@ Item {
             GolgeText {
                 anchors.right: parent.right
                 anchors.baseline: claudeAd.baseline
-                text: kart.claudeVar
-                    ? "Session " + Math.round(kart.claude.session.percent) + "% · Weekly "
-                        + Math.round(kart.claude.weekly.percent) + "%"
-                    : "yapılandırılmadı"
+                text: kart.claudeMetin()
                 color: kart.ucuncul
                 font.pixelSize: 11
             }
@@ -297,16 +290,9 @@ Item {
             height: 12
             GolgeText {
                 anchors.verticalCenter: parent.verticalCenter
-                text: kart.guncellemeMetni()
+                text: !limitModel.veriVar ? "veri bekleniyor" : (limitModel.bayat ? "veri gelmedi" : kart.guncellemeMetni())
                 color: kart.ucuncul
-                font.pixelSize: 10
-            }
-            GolgeText {
-                anchors.verticalCenter: parent.verticalCenter
-                anchors.right: parent.right
-                text: "v0.1"
-                color: kart.ucuncul
-                font.pixelSize: 10
+                font.pixelSize: 11
             }
         }
     }

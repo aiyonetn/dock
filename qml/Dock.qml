@@ -48,7 +48,14 @@ Item {
     }
 
     function hedefOlcek(i) {
-        return i === yakinIkon ? buyutmeCarpan : 1.0
+        var n = yakinIkon
+        if (n < 0)
+            return 1.0
+        if (i === n)
+            return buyutmeCarpan
+        var d = Math.abs(i - n)
+        var oran = d === 1 ? 0.65 : d === 2 ? 0.25 : 0.0
+        return 1.0 + (buyutmeCarpan - 1.0) * oran
     }
 
     HoverHandler {
@@ -76,10 +83,10 @@ Item {
     // maliyeti cikariyordu. Artik tek dokulu dikdortgen.
     Image {
         source: golgeUrl
-        x: panelKutu.x - 10
-        y: panelKutu.y + 2
-        width: panelKutu.width + 20
-        height: panelKutu.height + 22
+        x: panelKutu.x - 20
+        y: panelKutu.y - 20
+        width: panelKutu.width + 40
+        height: panelKutu.height + 40
         fillMode: Image.Stretch
         smooth: true
     }
@@ -92,6 +99,13 @@ Item {
         y: kok.height - kok.altPay - height
         Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
         Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+        onWidthChanged: panelYenile.restart()
+
+        Timer {
+            id: panelYenile
+            interval: 170
+            onTriggered: kopru.panel_genislik(Math.round(panelKutu.width), Math.round(panelKutu.x))
+        }
 
         // Arkasi bulanik masaustu (Python'da 12 kat kucult/buyut).
         Image {
@@ -170,6 +184,15 @@ Item {
                     NumberAnimation { duration: 140; easing.type: Easing.OutQuad }
                 }
 
+                Rectangle {
+                    visible: model.kimlik === "muzik.desktop"
+                    width: 1
+                    height: 44
+                    color: "#30ffffff"
+                    anchors.verticalCenter: parent.verticalCenter
+                    x: -7
+                }
+
                 Item {
                     id: kutu
                     anchors.horizontalCenter: parent.horizontalCenter
@@ -206,10 +229,10 @@ Item {
                 // Acik uygulama: ikonun altinda 4 px daire.
                 Rectangle {
                     visible: model.calisti
-                    width: 4
-                    height: 4
-                    radius: 2
-                    color: "#aaffffff"
+                    width: 6
+                    height: 6
+                    radius: 3
+                    color: "#ffffffff"
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.top: kutu.bottom
                     anchors.topMargin: 3

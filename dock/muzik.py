@@ -24,6 +24,7 @@ class MuzikModel(QObject):
         self._caliyor = True
         self._demo = True
         self._iface: QDBusInterface | None = None
+        self._servis = ""
         self._deneme = 0
         self._ui_sayac = 0
         self._ui_aktif = False
@@ -60,6 +61,7 @@ class MuzikModel(QObject):
             adlar = arayuz.registeredServiceNames().value()
         except Exception:
             return
+        adaylar = []
         for ad in adlar:
             if not ad.startswith(_MPRIS_ON_EK):
                 continue
@@ -70,10 +72,32 @@ class MuzikModel(QObject):
                 QDBusConnection.sessionBus(),
             )
             if iface.isValid():
-                self._iface = iface
-                self._demo = False
-                self._mpris_oku()
-                return
+                durum = str(iface.property("PlaybackStatus") or "")
+                adaylar.append((iface, ad, durum))
+        if not adaylar:
+            return
+        calan = next((a for a in adaylar if a[2] == "Playing"), adaylar[-1])
+        self._iface = calan[0]
+        self._servis = calan[1]
+        self._demo = False
+        self._mpris_oku()
+
+    @Slot(str, str, str)
+    def isim_degisti(self, ad: str, eski: str, yeni: str) -> None:
+        if ad == self._servis and not yeni:
+            self._iface = None
+            self._servis = ""
+            self._demo = True
+            self._baslik = _DEMO_BASLIK
+            self._sanatci = _DEMO_SANATCI
+            self._album = "Demo"
+            self._kapak = ""
+            self._sure = _DEMO_SURE
+            self._konum = 0
+            self._caliyor = True
+            self.degisti.emit()
+        elif not self._servis:
+            self._mpris_ara()
 
     def _mpris_oku(self) -> None:
         if self._iface is None:
@@ -116,7 +140,14 @@ class MuzikModel(QObject):
                 self._caliyor = False
                 self.degisti.emit()
         else:
-            self._mpris_oku()
+            try:
+                adlar = QDBusConnection.sessionBus().interface().registeredServiceNames().value()
+            except Exception:
+                adlar = []
+            if self._servis not in adlar:
+                self.isim_degisti(self._servis, self._servis, "")
+            else:
+                self._mpris_oku()
 
     @Slot(bool)
     def ui_aktif_ayarla(self, deger: bool) -> None:
