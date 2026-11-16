@@ -21,7 +21,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath
+from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QImage, QPainter, QPainterPath
 from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
@@ -48,9 +48,9 @@ _PANEL_DIKEY_BOSLUK = 12
 _ALT_PAY = 12
 # Pencere opak: buyuyen ikonlar icin panel ustunde pay, golge icin altta 10 px.
 # Kalan alan masaustu goruntusuyle doldurulur; saydamlik/compositor gerekmez.
-_PENCERE_UST_PAY = 260
+_PENCERE_UST_PAY = 340
 # Yatay pay: buyuyen ikonlar komsularini itince panel genisler, kirpilma olmaz.
-_PENCERE_YAN_PAY = 38
+_PENCERE_YAN_PAY = 120
 
 
 class ArkaplanSaglayici(QQuickImageProvider):
@@ -226,6 +226,8 @@ class Dock(QWidget):
         baglam.setContextProperty("limitModel", self.limit_model)
         baglam.setContextProperty("muzikModel", self.muzik_model)
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
+        baglam.setContextProperty("_pencereSol", self._x)
+        baglam.setContextProperty("_ekranGenislik", self._ekran.width())
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
         )
@@ -235,7 +237,7 @@ class Dock(QWidget):
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, 14)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 214, 7, 10, 14)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, 14)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -389,14 +391,10 @@ class Dock(QWidget):
             (self._panel_x, self._panel_y, self._taban_panel_genislik, self._panel_yukseklik)
         ]
         kok = self.gorunum.rootObject()
-        for anahtar, rect in (
-            ("kartAcik", self._kart_rect),
-            ("muzikAcik", self._muzik_rect),
+        if kok is not None and (
+            bool(kok.property("kartAcik")) or bool(kok.property("muzikAcik"))
         ):
-            if rect is None or kok is None or not bool(kok.property(anahtar)):
-                continue
-            x, y, gen, yuk = rect
-            bolgeler.append((x, y, gen, yuk))
+            bolgeler.append((0, 0, self._gen, self._panel_y))
         try:
             x11.giris_maskesi(int(self.winId()), bolgeler)
         except Exception:
@@ -446,7 +444,7 @@ class Dock(QWidget):
 
     # --- arka plan ---------------------------------------------------------
     @staticmethod
-    def _cam(resim: QImage, kat: int, alfa: int, yaricap: int) -> QImage:
+    def _cam(resim: QImage, kat: int, alfa: int, yaricap: int, renk=None) -> QImage:
         """Ucuz blur + koyu ton + yuvarlatilmis kose (tek sefer)."""
         kucuk = resim.scaled(
             max(1, resim.width() // kat),
@@ -456,7 +454,14 @@ class Dock(QWidget):
         )
         bulanik = kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         boya = QPainter(bulanik)
-        boya.fillRect(bulanik.rect(), QColor(10, 10, 10, alfa))
+        ton = QColor(10, 10, 10)
+        if renk is not None and renk.isValid():
+            ton = QColor(
+                int(10 * 0.75 + renk.red() * 0.25),
+                int(10 * 0.75 + renk.green() * 0.25),
+                int(10 * 0.75 + renk.blue() * 0.25),
+            )
+        boya.fillRect(bulanik.rect(), QColor(ton.red(), ton.green(), ton.blue(), alfa))
         boya.end()
         return Dock._koseleri_yuvarlat(bulanik, yaricap)
 
@@ -475,7 +480,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14)
+        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._kart_hash:
             return
@@ -534,7 +539,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14)
+        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._muzik_hash:
             return
@@ -579,11 +584,25 @@ class Dock(QWidget):
         ekran = self.screen()
         if ekran is None:
             return
-        resim = ekran.grabWindow(0, self._x, self._y_gorunur, self._gen, self._yuk)
+        resim = ekran.grabWindow(
+            0,
+            max(0, self._x),
+            self._y_gorunur,
+            min(self._gen, self._ekran.width()),
+            self._yuk,
+        )
         if resim.isNull():
             return
         self._grab_sayisi += 1
-        tam = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
+        kaynak = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
+        if kaynak.width() == self._gen:
+            tam = kaynak
+        else:
+            tam = QImage(self._gen, self._yuk, QImage.Format_RGBA8888)
+            tam.fill(QColor(0, 0, 0, 255))
+            boya = QPainter(tam)
+            boya.drawImage(-self._x + max(0, self._x), 0, kaynak)
+            boya.end()
         self._tam = tam
         self._tam_surum += 1
         panel = tam.copy(
@@ -619,8 +638,26 @@ class Dock(QWidget):
             self.gizle()
 
 
+def _fontlari_yukle() -> str:
+    aileler: dict[str, str] = {}
+    for dosya in sorted((KOK / "assets" / "fonts").glob("*.ttf")):
+        kimlik = QFontDatabase.addApplicationFont(str(dosya))
+        if kimlik < 0:
+            print(f"HATA: font yuklenemedi: {dosya.name}", flush=True)
+            return ""
+        for aile in QFontDatabase.applicationFontFamilies(kimlik):
+            aileler[aile] = dosya.name
+    if "Geist" not in aileler or "Geist Mono" not in aileler:
+        print(f"HATA: Geist aileleri bulunamadi: {aileler}", flush=True)
+        return ""
+    QApplication.setFont(QFont("Geist", 11))
+    return aileler["Geist"]
+
+
 def calistir() -> int:
     uygulama = QApplication([])
+    if not _fontlari_yukle():
+        return 1
     uygulama.setApplicationName("dock")
     uygulama.setQuitOnLastWindowClosed(True)
 

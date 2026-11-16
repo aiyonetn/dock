@@ -36,6 +36,8 @@ Item {
     property string muzikKaynak: ""
     property real aiMerkezX: 0
     property Item muzikHucre: null
+    property real pencereSol: _pencereSol
+    property real ekranGenislik: _ekranGenislik
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
     readonly property int yakinIkon: {
@@ -53,9 +55,7 @@ Item {
             return 1.0
         if (i === n)
             return buyutmeCarpan
-        var d = Math.abs(i - n)
-        var oran = d === 1 ? 0.65 : d === 2 ? 0.25 : 0.0
-        return 1.0 + (buyutmeCarpan - 1.0) * oran
+        return 1.0
     }
 
     HoverHandler {
@@ -204,6 +204,7 @@ Item {
                 // Ikon + gomulu yumusak golge (1 px asagi, 6 px blur).
                 Image {
                     id: simge
+                    visible: model.kimlik !== "muzik.desktop"
                     anchors.centerIn: kutu
                     width: kutu.width
                     height: width
@@ -215,6 +216,47 @@ Item {
                     smooth: true
                     mipmap: false
                     asynchronous: true
+                }
+
+                Image {
+                    visible: model.kimlik === "muzik.desktop" && muzikModel.kapak !== ""
+                    anchors.fill: kutu
+                    source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                }
+
+                Item {
+                    visible: model.kimlik === "muzik.desktop"
+                    anchors.horizontalCenter: kutu.horizontalCenter
+                    anchors.bottom: kutu.bottom
+                    anchors.bottomMargin: 6
+                    width: 10
+                    height: 12
+                    property real faz: 0
+                    Timer {
+                        interval: 250
+                        repeat: true
+                        running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
+                            && kok.fareX >= 0
+                        onTriggered: parent.faz += 0.9
+                    }
+                    Rectangle {
+                        x: 0; width: 2; radius: 1; color: "#F7F7F8"
+                        height: muzikModel.caliyor ? 6 + 6 * Math.abs(Math.sin(parent.faz)) : 3
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Rectangle {
+                        x: 4; width: 2; radius: 1; color: "#F7F7F8"
+                        height: muzikModel.caliyor ? 6 + 6 * Math.abs(Math.sin(parent.faz + 2.1)) : 3
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
+                    Rectangle {
+                        x: 8; width: 2; radius: 1; color: "#F7F7F8"
+                        height: muzikModel.caliyor ? 6 + 6 * Math.abs(Math.sin(parent.faz + 4.2)) : 3
+                        anchors.verticalCenter: parent.verticalCenter
+                    }
                 }
 
                 Rectangle {
@@ -312,12 +354,13 @@ Item {
         id: kart
         z: 31
         readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
-        readonly property real hedefY: panelKutu.y - height - 12
+        readonly property real hedefY: panelKutu.y - height - 80
         kartKaynak: kok.kartKaynak
         visible: kok.kartAcik || opacity > 0
         opacity: kok.kartAcik ? 1 : 0
-        x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
-            satir.x + satir.width - aiGenislik / 2 - width / 2)))
+        x: Math.round(Math.max(12 - kok.pencereSol,
+            Math.min(kok.ekranGenislik - 12 - width - kok.pencereSol,
+                satir.x + satir.width - aiGenislik / 2 - width / 2)))
         y: Math.round(hedefY + (kok.kartAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
@@ -336,11 +379,12 @@ Item {
         readonly property real merkezX: kok.muzikHucre
             ? satir.x + kok.muzikHucre.x + kok.muzikHucre.width / 2
             : satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2
-        readonly property real hedefY: panelKutu.y - height - 12
+        readonly property real hedefY: panelKutu.y - height - 80
         visible: kok.muzikAcik || opacity > 0
         opacity: kok.muzikAcik ? 1 : 0
-        x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
-            merkezX - width / 2)))
+        x: Math.round(Math.max(12 - kok.pencereSol,
+            Math.min(kok.ekranGenislik - 12 - width - kok.pencereSol,
+                merkezX - width / 2)))
         y: Math.round(hedefY + (kok.muzikAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }

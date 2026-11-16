@@ -119,8 +119,9 @@ ve geri / oynat-duraklat / ileri düğmeleri.
   olmadan kurulum yapılamıyor; AppImage indirilemedi. Bu nedenle kompozit cam
   tekniği korunuyor.
 
-### Kanıt klasörü
+## Fontlar
 
-- `kanit/` güncel kanıtlar; eski görünüm kareleri **yerel** `kanit/arsiv/` altında durur
-  (`kanit/*.png` depoya girmiyor — yalnız demo videosu ve `olcum.txt` sürümleniyor)
-- README görselleri (`docs/ekran/`) 16 Kas akşamı, düzeltmelerden sonra yeniden çekildi
+Geist + Geist Mono (SIL OFL, `assets/fonts/`). Açılışta tüm TTF'ler
+`QFontDatabase.addApplicationFont` ile yüklenir; aile bulunamaz veya yükleme
+başarısız olursa uygulama hata basıp çıkar. Varsayılan `Geist 11`; yüzdeler,
+süreler, geri sayımlar ve halka içi değerler `Geist Mono` kullanır.
