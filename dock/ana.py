@@ -48,9 +48,9 @@ _PANEL_DIKEY_BOSLUK = 12
 _ALT_PAY = 12
 # Pencere opak: buyuyen ikonlar icin panel ustunde pay, golge icin altta 10 px.
 # Kalan alan masaustu goruntusuyle doldurulur; saydamlik/compositor gerekmez.
-_PENCERE_UST_PAY = 260
+_PENCERE_UST_PAY = 340
 # Yatay pay: buyuyen ikonlar komsularini itince panel genisler, kirpilma olmaz.
-_PENCERE_YAN_PAY = 38
+_PENCERE_YAN_PAY = 120
 
 
 class ArkaplanSaglayici(QQuickImageProvider):
@@ -226,6 +226,8 @@ class Dock(QWidget):
         baglam.setContextProperty("limitModel", self.limit_model)
         baglam.setContextProperty("muzikModel", self.muzik_model)
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
+        baglam.setContextProperty("pencereSol", self._x)
+        baglam.setContextProperty("ekranGenislik", self._ekran.width())
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
         )
@@ -579,11 +581,25 @@ class Dock(QWidget):
         ekran = self.screen()
         if ekran is None:
             return
-        resim = ekran.grabWindow(0, self._x, self._y_gorunur, self._gen, self._yuk)
+        resim = ekran.grabWindow(
+            0,
+            max(0, self._x),
+            self._y_gorunur,
+            min(self._gen, self._ekran.width()),
+            self._yuk,
+        )
         if resim.isNull():
             return
         self._grab_sayisi += 1
-        tam = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
+        kaynak = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
+        if kaynak.width() == self._gen:
+            tam = kaynak
+        else:
+            tam = QImage(self._gen, self._yuk, QImage.Format_RGBA8888)
+            tam.fill(QColor(0, 0, 0, 255))
+            boya = QPainter(tam)
+            boya.drawImage(-self._x + max(0, self._x), 0, kaynak)
+            boya.end()
         self._tam = tam
         self._tam_surum += 1
         panel = tam.copy(

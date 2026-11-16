@@ -36,6 +36,8 @@ Item {
     property string muzikKaynak: ""
     property real aiMerkezX: 0
     property Item muzikHucre: null
+    property real pencereSol: 0
+    property real ekranGenislik: 1440
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
     readonly property int yakinIkon: {
@@ -53,9 +55,7 @@ Item {
             return 1.0
         if (i === n)
             return buyutmeCarpan
-        var d = Math.abs(i - n)
-        var oran = d === 1 ? 0.65 : d === 2 ? 0.25 : 0.0
-        return 1.0 + (buyutmeCarpan - 1.0) * oran
+        return 1.0
     }
 
     HoverHandler {
@@ -312,12 +312,13 @@ Item {
         id: kart
         z: 31
         readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
-        readonly property real hedefY: panelKutu.y - height - 12
+        readonly property real hedefY: panelKutu.y - height - 80
         kartKaynak: kok.kartKaynak
         visible: kok.kartAcik || opacity > 0
         opacity: kok.kartAcik ? 1 : 0
-        x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
-            satir.x + satir.width - aiGenislik / 2 - width / 2)))
+        x: Math.round(Math.max(12 - kok.pencereSol,
+            Math.min(kok.ekranGenislik - 12 - width - kok.pencereSol,
+                satir.x + satir.width - aiGenislik / 2 - width / 2)))
         y: Math.round(hedefY + (kok.kartAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
@@ -336,11 +337,12 @@ Item {
         readonly property real merkezX: kok.muzikHucre
             ? satir.x + kok.muzikHucre.x + kok.muzikHucre.width / 2
             : satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2
-        readonly property real hedefY: panelKutu.y - height - 12
+        readonly property real hedefY: panelKutu.y - height - 80
         visible: kok.muzikAcik || opacity > 0
         opacity: kok.muzikAcik ? 1 : 0
-        x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
-            merkezX - width / 2)))
+        x: Math.round(Math.max(12 - kok.pencereSol,
+            Math.min(kok.ekranGenislik - 12 - width - kok.pencereSol,
+                merkezX - width / 2)))
         y: Math.round(hedefY + (kok.muzikAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
