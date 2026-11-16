@@ -3,12 +3,13 @@ import QtQuick
 Item {
     id: kart
     width: 320
-    height: 204
+    height: 228
 
     property var codex: limitModel.codex
     property var claude: limitModel.claude
     property bool codexVar: !!codex && codex.kaynak !== "yok"
     property bool claudeVar: !!claude && claude.kaynak !== "yok"
+    property string kartKaynak: ""
     property int simdi: Math.floor(Date.now() / 1000)
     property double sonGuncelleme: Math.floor(Date.now() / 1000)
 
@@ -33,9 +34,9 @@ Item {
         var gun = Math.floor(d / 86400)
         var sa = Math.floor((d % 86400) / 3600)
         var dk = Math.floor((d % 3600) / 60)
-        if (gun > 0) return gun + "g " + sa + "s sonra"
-        if (sa > 0) return sa + "s " + dk + "dk sonra"
-        return Math.max(1, dk) + "dk sonra"
+        if (gun > 0) return gun + " gün" + (sa > 0 ? " " + sa + " sa" : "")
+        if (sa > 0) return sa + " sa" + (dk > 0 ? " " + dk + " dk" : "")
+        return Math.max(1, dk) + " dk"
     }
 
     function guncellemeMetni() {
@@ -58,18 +59,59 @@ Item {
         onTriggered: kart.simdi = Math.floor(Date.now() / 1000)
     }
 
+    function konumBildir() {
+        kopru.kart_konumu(Math.round(x), Math.round(y), Math.round(width), Math.round(height))
+    }
+    onXChanged: konumBildir()
+    onYChanged: konumBildir()
+    Component.onCompleted: konumBildir()
+
+    // Disari 10 px yumusak golge (Python'da bir kez uretilir).
+    Image {
+        source: "image://arkaplan/kartGolge"
+        x: -10
+        y: -8
+        width: parent.width + 20
+        height: parent.height + 20
+        fillMode: Image.Stretch
+        smooth: true
+    }
+
+    // Kompozit cam: kendi arkasindaki masaustu + blur + %55 ton.
+    Image {
+        anchors.fill: parent
+        source: kart.kartKaynak
+        fillMode: Image.Stretch
+        cache: false
+        smooth: true
+    }
+
     Rectangle {
         anchors.fill: parent
         radius: 14
-        color: "#0A0A0A"
+        color: "#00000000"
         border.width: 1
-        border.color: "#2A2A2C"
+        border.color: "#14ffffff"
+    }
+
+    Rectangle {
+        anchors.top: parent.top
+        anchors.topMargin: 1
+        anchors.horizontalCenter: parent.horizontalCenter
+        width: parent.width - 28
+        height: 1
+        gradient: Gradient {
+            orientation: Gradient.Horizontal
+            GradientStop { position: 0.0; color: "transparent" }
+            GradientStop { position: 0.5; color: "#24ffffff" }
+            GradientStop { position: 1.0; color: "transparent" }
+        }
     }
 
     Column {
-        x: 16
-        y: 16
-        width: parent.width - 32
+        x: 18
+        y: 18
+        width: parent.width - 36
         spacing: 0
 
         Item {
@@ -86,8 +128,9 @@ Item {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 text: "ChatGPT" + (kart.codex && kart.codex.plan ? " · " + kart.codex.plan : "")
-                color: kart.ikincil
-                font.pixelSize: 11
+                color: "#C9C9CE"
+                font.pixelSize: 12
+                font.weight: Font.Medium
             }
         }
 
@@ -98,7 +141,7 @@ Item {
         Item {
             visible: kart.codexVar
             width: parent.width
-            height: 41
+            height: 45
             Item {
                 width: parent.width
                 height: 16
@@ -120,14 +163,14 @@ Item {
                 }
             }
             Rectangle {
-                y: 18
+                y: 22
                 width: parent.width
                 height: 8
                 radius: 4
                 color: kart.ray
                 Rectangle {
-                    width: kart.codex.session.percent === null ? 2
-                        : Math.max(2, parent.width * kart.codex.session.percent / 100)
+                    width: kart.codex.session.percent > 0
+                        ? Math.max(1, parent.width * kart.codex.session.percent / 100) : 0
                     height: parent.height
                     radius: 4
                     color: kart.codex.session.percent === null
@@ -135,7 +178,7 @@ Item {
                 }
             }
             Text {
-                y: 30
+                y: 34
                 width: parent.width
                 horizontalAlignment: Text.AlignRight
                 text: kart.codex.session.percent === null ? "—"
@@ -145,12 +188,12 @@ Item {
             }
         }
 
-        Item { width: parent.width; height: 6; visible: kart.codexVar }
+        Item { width: parent.width; height: 14; visible: kart.codexVar }
 
         Item {
             visible: kart.codexVar
             width: parent.width
-            height: 41
+            height: 45
             Item {
                 width: parent.width
                 height: 16
@@ -172,14 +215,14 @@ Item {
                 }
             }
             Rectangle {
-                y: 18
+                y: 22
                 width: parent.width
                 height: 8
                 radius: 4
                 color: kart.ray
                 Rectangle {
-                    width: kart.codex.weekly.percent === null ? 2
-                        : Math.max(2, parent.width * kart.codex.weekly.percent / 100)
+                    width: kart.codex.weekly.percent > 0
+                        ? Math.max(1, parent.width * kart.codex.weekly.percent / 100) : 0
                     height: parent.height
                     radius: 4
                     color: kart.codex.weekly.percent === null
@@ -187,7 +230,7 @@ Item {
                 }
             }
             Text {
-                y: 30
+                y: 34
                 width: parent.width
                 horizontalAlignment: Text.AlignRight
                 text: kart.codex.weekly.percent === null ? "—"
@@ -213,21 +256,22 @@ Item {
 
         Item {
             width: parent.width
-            height: 16
+            height: 18
             Text {
-                anchors.verticalCenter: parent.verticalCenter
+                id: claudeAd
+                y: 0
                 text: "Claude"
-                color: kart.ikincil
-                font.pixelSize: 11
+                color: "#C9C9CE"
+                font.pixelSize: 12
             }
             Text {
-                anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
+                anchors.baseline: claudeAd.baseline
                 text: kart.claudeVar
                     ? "Session " + Math.round(kart.claude.session.percent) + "% · Weekly "
                         + Math.round(kart.claude.weekly.percent) + "%"
                     : "yapılandırılmadı"
-                color: kart.ikincil
+                color: kart.ucuncul
                 font.pixelSize: 11
             }
         }

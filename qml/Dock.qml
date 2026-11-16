@@ -31,6 +31,7 @@ Item {
     property real fareX: -1
     property int ipucu: -1
     property bool kartAcik: false
+    property string kartKaynak: ""
     property real aiMerkezX: 0
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
@@ -72,10 +73,10 @@ Item {
     // maliyeti cikariyordu. Artik tek dokulu dikdortgen.
     Image {
         source: golgeUrl
-        x: panelKutu.x - 6
+        x: panelKutu.x - 10
         y: panelKutu.y + 2
-        width: panelKutu.width + 12
-        height: panelKutu.height + 20
+        width: panelKutu.width + 20
+        height: panelKutu.height + 22
         fillMode: Image.Stretch
         smooth: true
     }
@@ -98,23 +99,12 @@ Item {
             cache: false
         }
 
-        // %80 opak koyu katman + ust isik gradyani.
-        Rectangle {
-            anchors.fill: parent
-            radius: 20
-            gradient: Gradient {
-                GradientStop { position: 0.0; color: "#cd12141a" }
-                GradientStop { position: 0.45; color: "#cd0e0e12" }
-                GradientStop { position: 1.0; color: "#d10b0b0f" }
-            }
-        }
-
         Rectangle {
             anchors.fill: parent
             radius: 20
             color: "#00000000"
             border.width: 1
-            border.color: "#22ffffff"
+            border.color: "#14ffffff"
         }
 
         Rectangle {
@@ -126,7 +116,7 @@ Item {
             gradient: Gradient {
                 orientation: Gradient.Horizontal
                 GradientStop { position: 0.0; color: "transparent" }
-                GradientStop { position: 0.5; color: "#30ffffff" }
+                GradientStop { position: 0.5; color: "#24ffffff" }
                 GradientStop { position: 1.0; color: "transparent" }
             }
         }
@@ -289,11 +279,12 @@ Item {
         z: 31
         readonly property real sonGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
         readonly property real hedefY: panelKutu.y - height - 12
+        kartKaynak: kok.kartKaynak
         visible: kok.kartAcik || opacity > 0
         opacity: kok.kartAcik ? 1 : 0
-        x: Math.max(6, Math.min(kok.width - width - 6,
-            satir.x + satir.width - sonGenislik / 2 - width / 2))
-        y: hedefY + (kok.kartAcik ? 0 : 6)
+        x: Math.round(Math.max(6, Math.min(kok.width - width - 6,
+            satir.x + satir.width - sonGenislik / 2 - width / 2)))
+        y: Math.round(hedefY + (kok.kartAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
         }

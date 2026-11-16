@@ -20,3 +20,7 @@ Dock'un sonundaki kıvılcım ikonuna tıklayınca ChatGPT/Codex ve Claude için
 - Tipografi: 13 px başlık, 11 px etiket, 15 px bold yüzde, 10 px alt bilgi;
   çubuklar 8 px, %0'da bile 2 px başlangıç noktası gösterir. Açılış/kapanış
   120 ms `OutQuad` ile 6 px kayma animasyonu kullanır.
+- Kart ve panel arka planı, dock görünür olmadan alınan ekran görüntüsünden
+  8–12× küçült/büyüt blur ile üretilir; karta `%55`, panele `%80` `#0A0A0A`
+  tonu bindirilir. Kart açıkken fon 500 ms'de bir yeniden kompozit edilir,
+  kapalıyken yakalama yapılmaz.

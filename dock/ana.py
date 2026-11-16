@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+from hashlib import sha1
 import time
 from pathlib import Path
 
@@ -75,12 +76,17 @@ class Kopru(QObject):
 
     kartIstendi = Signal()
     kartKapat = Signal()
+    kartKonum = Signal(int, int, int, int)
 
     def __init__(self, model: IkonModel, uygulamalar: list[Uygulama]) -> None:
         super().__init__()
         self.model = model
         self.uygulamalar = uygulamalar
         self.surecler: dict[int, list[subprocess.Popen]] = {}
+
+    @Slot(int, int, int, int)
+    def kart_konumu(self, x: int, y: int, gen: int, yuk: int) -> None:
+        self.kartKonum.emit(x, y, gen, yuk)
 
     @Slot(int)
     def tikla(self, indeks: int) -> None:
@@ -118,12 +124,17 @@ class Dock(QWidget):
         self.kopru = Kopru(self.model, uygulamalar)
         self.kopru.kartIstendi.connect(self._kart_degistir)
         self.kopru.kartKapat.connect(lambda: self._kart_ayarla(False))
+        self.kopru.kartKonum.connect(self._kart_konum_guncelle)
         self.limit_model = LimitModel(self)
         self.limit_yonetici = LimitYonetici(self.limit_model, self)
         self._kart_bekle = False
         self.limit_yonetici.veriHazir.connect(self._ilk_limit_karti)
         self.saglayici = ArkaplanSaglayici()
         self._sayac = 0
+        self._kart_sayac = 0
+        self._kart_hash = ""
+        self._kart_rect: tuple[int, int, int, int] | None = None
+        self._tam: QImage | None = None
         self._gorunur = False
         self._son_icerde = time.monotonic()
 
@@ -182,6 +193,7 @@ class Dock(QWidget):
             self._taban_panel_genislik + 24, self._panel_yukseklik + 24
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
+        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -192,6 +204,10 @@ class Dock(QWidget):
         self._fare_zaman.setInterval(50)
         self._fare_zaman.timeout.connect(self._fare_denetle)
         self._fare_zaman.start()
+
+        self._kart_zaman = QTimer(self)
+        self._kart_zaman.setInterval(500)
+        self._kart_zaman.timeout.connect(self._kart_arkaplan_yenile)
 
         self._surec_zaman = QTimer(self)
         self._surec_zaman.setInterval(1500)
@@ -213,6 +229,20 @@ class Dock(QWidget):
         kok = self.gorunum.rootObject()
         if kok is not None:
             kok.setProperty("kartAcik", acik)
+        zaman = getattr(self, "_kart_zaman", None)
+        if acik:
+            self._kart_arkaplan_yenile()
+            if zaman is not None:
+                zaman.start()
+        elif zaman is not None:
+            zaman.stop()
+
+    @Slot(int, int, int, int)
+    def _kart_konum_guncelle(self, x: int, y: int, gen: int, yuk: int) -> None:
+        self._kart_rect = (x, y, gen, yuk)
+        zaman = getattr(self, "_kart_zaman", None)
+        if zaman is not None and zaman.isActive():
+            self._kart_arkaplan_yenile()
 
     def _kart_degistir(self) -> None:
         kok = self.gorunum.rootObject()
@@ -279,8 +309,8 @@ class Dock(QWidget):
 
     # --- arka plan ---------------------------------------------------------
     @staticmethod
-    def _bulanik(resim: QImage, kat: int = 10) -> QImage:
-        """Ucuz blur: kucult, sonra yumusak geri buyut."""
+    def _cam(resim: QImage, kat: int, alfa: int, yaricap: int) -> QImage:
+        """Ucuz blur + koyu ton + yuvarlatilmis kose (tek sefer)."""
         kucuk = resim.scaled(
             max(1, resim.width() // kat),
             max(1, resim.height() // kat),
@@ -288,7 +318,32 @@ class Dock(QWidget):
             Qt.SmoothTransformation,
         )
         bulanik = kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-        return Dock._koseleri_yuvarlat(bulanik, 20)
+        boya = QPainter(bulanik)
+        boya.fillRect(bulanik.rect(), QColor(10, 10, 10, alfa))
+        boya.end()
+        return Dock._koseleri_yuvarlat(bulanik, yaricap)
+
+    @staticmethod
+    def _bulanik(resim: QImage, kat: int = 10) -> QImage:
+        return Dock._cam(resim, kat, 204, 20)
+
+    def _kart_arkaplan_yenile(self) -> None:
+        if self._tam is None or self._kart_rect is None:
+            return
+        x, y, gen, yuk = self._kart_rect
+        x = max(0, min(x, self._tam.width() - gen))
+        y = max(0, min(y, self._tam.height() - yuk))
+        parca = self._tam.copy(QRect(x, y, gen, yuk))
+        goruntu = self._cam(parca, 10, 140, 14)
+        ozet = sha1(bytes(goruntu.constBits())).hexdigest()
+        if ozet == self._kart_hash:
+            return
+        self._kart_hash = ozet
+        self.saglayici.goruntuler["kart"] = goruntu
+        self._kart_sayac += 1
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("kartKaynak", f"image://arkaplan/kart?{self._kart_sayac}")
 
     @staticmethod
     def _koseleri_yuvarlat(resim: QImage, yaricap: int) -> QImage:
@@ -343,6 +398,7 @@ class Dock(QWidget):
         if resim.isNull():
             return
         tam = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
+        self._tam = tam
         panel = tam.copy(
             QRect(
                 self._panel_x,
