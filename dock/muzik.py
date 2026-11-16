@@ -26,6 +26,7 @@ class MuzikModel(QObject):
         self._iface: QDBusInterface | None = None
         self._deneme = 0
         self._ui_sayac = 0
+        self._ui_aktif = False
         self._zaman = QTimer(self)
         self._zaman.setInterval(1000)
         self._zaman.timeout.connect(self._tik)
@@ -109,13 +110,19 @@ class MuzikModel(QObject):
                 self._konum = min(self._sure, self._konum + 1000)
                 self._ui_sayac += 1
                 # Ilerleme 1 sn'de bir; UI 2 sn'de bir cizilir (CPU).
-                if self._ui_sayac % 2 == 0:
+                if self._ui_aktif and self._ui_sayac % 2 == 0:
                     self.degisti.emit()
             elif self._konum >= self._sure:
                 self._caliyor = False
                 self.degisti.emit()
         else:
             self._mpris_oku()
+
+    @Slot(bool)
+    def ui_aktif_ayarla(self, deger: bool) -> None:
+        self._ui_aktif = deger
+        if deger:
+            self.degisti.emit()
 
     # --- dugmeler ----------------------------------------------------------
     @Slot()

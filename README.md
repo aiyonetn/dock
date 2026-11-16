@@ -21,8 +21,10 @@ Dock'un sonundaki kıvılcım ikonuna tıklayınca ChatGPT/Codex ve Claude için
   çubuklar 8 px, %0'da bile 2 px başlangıç noktası gösterir. Açılış/kapanış
   120 ms `OutQuad` ile 6 px kayma animasyonu kullanır.
 - Kart ve panel arka planı, dock görünür olmadan alınan ekran görüntüsünden
-  8–12× küçült/büyüt blur ile üretilir; karta `%55`, panele `%80` `#0A0A0A`
-  tonu bindirilir. Kart açıkken fon 500 ms'de bir yeniden kompozit edilir,
+  16–20× küçült/büyüt blur ile üretilir; karta `%40`, panele `%80` `#0A0A0A`
+  tonu bindirilir. Kart arka planı `OpacityMask` ile 14 px yuvarlak köşeye
+  maskelenir; kenar `#30ffffff`, üst ışık `#3dffffff`. Metinler 1 px koyu dış
+  çizgi (`GolgeText`) ile okunurluk kazanır. Kart açıkken fon 500 ms'de bir yeniden kompozit edilir,
   kapalıyken yakalama yapılmaz.
 
 ## Müzik kartı
@@ -43,5 +45,6 @@ ve geri / oynat-duraklat / ileri düğmeleri.
 - Kontrol grubu kart merkezine tam ortalı, eşit aralıklı; geri/ileri glifi 16 px,
   tıklama alanı 28×28, oynat 28 px daire.
 - Alt satır/süreler `#9A9AA0`, footer `#8E8E93` ve 11 px.
+- AI kartında plan/yüzde/geri sayım sağ kenarı 16 px iç boşlukta tek çizgiye hizalıdır.
 - `kanit/dock-demo.mp4`: 15 sn, 1280×720 H.264; büyütme → müzik kartı → kapat →
   AI limit kartı → kapat sırasını gösterir (Xvfb `:99`, dikey offset 180).

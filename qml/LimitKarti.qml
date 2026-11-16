@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 
 Item {
     id: kart
@@ -70,20 +71,35 @@ Item {
     Image {
         source: "image://arkaplan/kartGolge"
         x: -10
-        y: -8
+        y: -10
         width: parent.width + 20
         height: parent.height + 20
         fillMode: Image.Stretch
         smooth: true
     }
 
-    // Kompozit cam: kendi arkasindaki masaustu + blur + %55 ton.
+    // Kompozit cam; kartin yuvarlak koselerine maskelenir.
     Image {
+        id: camKaynak
         anchors.fill: parent
         source: kart.kartKaynak
         fillMode: Image.Stretch
         cache: true
         smooth: true
+        visible: false
+    }
+    Rectangle {
+        id: camMaske
+        anchors.fill: parent
+        radius: 14
+        color: "white"
+        layer.enabled: true
+        visible: false
+    }
+    OpacityMask {
+        anchors.fill: parent
+        source: camKaynak
+        maskSource: camMaske
     }
 
     Rectangle {
@@ -91,7 +107,7 @@ Item {
         radius: 14
         color: "#00000000"
         border.width: 1
-        border.color: "#14ffffff"
+        border.color: "#30ffffff"
     }
 
     Rectangle {
@@ -103,28 +119,28 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.5; color: "#24ffffff" }
+            GradientStop { position: 0.5; color: "#3dffffff" }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
 
     Column {
-        x: 18
-        y: 18
-        width: parent.width - 36
+        x: 16
+        y: 16
+        width: parent.width - 32
         spacing: 0
 
         Item {
             width: parent.width
             height: 18
-            Text {
+            GolgeText {
                 anchors.verticalCenter: parent.verticalCenter
                 text: "AI Kullanımı"
                 color: kart.ana
                 font.pixelSize: 13
                 font.weight: Font.DemiBold
             }
-            Text {
+            GolgeText {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 text: "ChatGPT" + (kart.codex && kart.codex.plan ? " · " + kart.codex.plan : "")
@@ -141,17 +157,17 @@ Item {
         Item {
             visible: kart.codexVar
             width: parent.width
-            height: 45
+            height: 46
             Item {
                 width: parent.width
                 height: 16
-                Text {
+                GolgeText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Session"
                     color: kart.ikincil
                     font.pixelSize: 11
                 }
-                Text {
+                GolgeText {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     text: (kart.codex.session.percent === null ? "—"
@@ -163,7 +179,7 @@ Item {
                 }
             }
             Rectangle {
-                y: 22
+                y: 20
                 width: parent.width
                 height: 8
                 radius: 4
@@ -177,10 +193,9 @@ Item {
                         ? kart.ray : kart.renk(kart.codex.session.percent)
                 }
             }
-            Text {
+            GolgeText {
                 y: 34
-                width: parent.width
-                horizontalAlignment: Text.AlignRight
+                anchors.right: parent.right
                 text: kart.codex.session.percent === null ? "—"
                     : kart.kalan(kart.codex.session.reset)
                 color: kart.ucuncul
@@ -188,22 +203,22 @@ Item {
             }
         }
 
-        Item { width: parent.width; height: 14; visible: kart.codexVar }
+        Item { width: parent.width; height: 12; visible: kart.codexVar }
 
         Item {
             visible: kart.codexVar
             width: parent.width
-            height: 45
+            height: 46
             Item {
                 width: parent.width
                 height: 16
-                Text {
+                GolgeText {
                     anchors.verticalCenter: parent.verticalCenter
                     text: "Weekly"
                     color: kart.ikincil
                     font.pixelSize: 11
                 }
-                Text {
+                GolgeText {
                     anchors.verticalCenter: parent.verticalCenter
                     anchors.right: parent.right
                     text: (kart.codex.weekly.percent === null ? "—"
@@ -215,7 +230,7 @@ Item {
                 }
             }
             Rectangle {
-                y: 22
+                y: 20
                 width: parent.width
                 height: 8
                 radius: 4
@@ -229,10 +244,9 @@ Item {
                         ? kart.ray : kart.renk(kart.codex.weekly.percent)
                 }
             }
-            Text {
+            GolgeText {
                 y: 34
-                width: parent.width
-                horizontalAlignment: Text.AlignRight
+                anchors.right: parent.right
                 text: kart.codex.weekly.percent === null ? "—"
                     : kart.kalan(kart.codex.weekly.reset)
                 color: kart.ucuncul
@@ -240,7 +254,7 @@ Item {
             }
         }
 
-        Text {
+        GolgeText {
             visible: !kart.codexVar
             width: parent.width
             height: 41
@@ -257,14 +271,14 @@ Item {
         Item {
             width: parent.width
             height: 18
-            Text {
+            GolgeText {
                 id: claudeAd
                 y: 0
                 text: "Claude"
                 color: "#C9C9CE"
                 font.pixelSize: 12
             }
-            Text {
+            GolgeText {
                 anchors.right: parent.right
                 anchors.baseline: claudeAd.baseline
                 text: kart.claudeVar
@@ -276,18 +290,18 @@ Item {
             }
         }
 
-        Item { width: parent.width; height: 6 }
+        Item { width: parent.width; height: 10 }
 
         Item {
             width: parent.width
             height: 12
-            Text {
+            GolgeText {
                 anchors.verticalCenter: parent.verticalCenter
                 text: kart.guncellemeMetni()
                 color: kart.ucuncul
                 font.pixelSize: 10
             }
-            Text {
+            GolgeText {
                 anchors.verticalCenter: parent.verticalCenter
                 anchors.right: parent.right
                 text: "v0.1"

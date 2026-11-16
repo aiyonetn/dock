@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 import QtQuick.Effects
 
 Item {
@@ -28,7 +29,7 @@ Item {
     Image {
         source: "image://arkaplan/muzikGolge"
         x: -10
-        y: -8
+        y: -10
         width: parent.width + 20
         height: parent.height + 20
         fillMode: Image.Stretch
@@ -36,11 +37,26 @@ Item {
     }
 
     Image {
+        id: camKaynak
         anchors.fill: parent
         source: kart.kartKaynak
         fillMode: Image.Stretch
         cache: true
         smooth: true
+        visible: false
+    }
+    Rectangle {
+        id: camMaske
+        anchors.fill: parent
+        radius: 14
+        color: "white"
+        layer.enabled: true
+        visible: false
+    }
+    OpacityMask {
+        anchors.fill: parent
+        source: camKaynak
+        maskSource: camMaske
     }
 
     Rectangle {
@@ -48,7 +64,7 @@ Item {
         radius: 14
         color: "#00000000"
         border.width: 1
-        border.color: "#14ffffff"
+        border.color: "#30ffffff"
     }
 
     Rectangle {
@@ -60,7 +76,7 @@ Item {
         gradient: Gradient {
             orientation: Gradient.Horizontal
             GradientStop { position: 0.0; color: "transparent" }
-            GradientStop { position: 0.5; color: "#24ffffff" }
+            GradientStop { position: 0.5; color: "#3dffffff" }
             GradientStop { position: 1.0; color: "transparent" }
         }
     }
@@ -133,7 +149,7 @@ Item {
     }
 
     // --- Baslik ------------------------------------------------------------
-    Text {
+    GolgeText {
         x: 86
         y: 18
         width: 216
@@ -143,7 +159,7 @@ Item {
         font.weight: Font.DemiBold
         elide: Text.ElideRight
     }
-    Text {
+    GolgeText {
         x: 86
         y: 36
         width: 216
@@ -178,14 +194,14 @@ Item {
         }
     }
 
-    Text {
+    GolgeText {
         x: 18
         y: 99
         text: kart.sure(muzikModel.konumMs)
         color: "#9A9AA0"
         font.pixelSize: 10
     }
-    Text {
+    GolgeText {
         anchors.right: parent.right
         anchors.rightMargin: 18
         y: 99
@@ -289,7 +305,7 @@ Item {
         }
     }
 
-    Text {
+    GolgeText {
         x: 18
         y: 163
         text: muzikModel.demo ? "demo · oynatıcı yok" : "MPRIS"

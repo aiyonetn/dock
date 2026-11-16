@@ -146,8 +146,11 @@ class Dock(QWidget):
         self._sayac = 0
         self._kart_sayac = 0
         self._kart_hash = ""
+        self._kart_anahtar = None
         self._muzik_sayac = 0
         self._muzik_hash = ""
+        self._muzik_anahtar = None
+        self._tam_surum = 0
         self._muzik_rect: tuple[int, int, int, int] | None = None
         self._kart_rect: tuple[int, int, int, int] | None = None
         self._tam: QImage | None = None
@@ -210,8 +213,8 @@ class Dock(QWidget):
             self._taban_panel_genislik + 24, self._panel_yukseklik + 24
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
-        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 214, 7)
+        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, 14)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 214, 7, 10, 14)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -283,9 +286,12 @@ class Dock(QWidget):
         kok = self.gorunum.rootObject()
         if kok is not None:
             kok.setProperty("muzikAcik", acik)
+        self.muzik_model.ui_aktif_ayarla(acik)
         zaman = getattr(self, "_muzik_zaman", None)
         if acik:
             self._muzik_arkaplan_yenile()
+            if zaman is not None:
+                zaman.start()
         elif zaman is not None:
             zaman.stop()
 
@@ -382,11 +388,15 @@ class Dock(QWidget):
     def _kart_arkaplan_yenile(self) -> None:
         if self._tam is None or self._kart_rect is None:
             return
+        anahtar = (self._tam_surum, self._kart_rect)
+        if anahtar == self._kart_anahtar:
+            return
+        self._kart_anahtar = anahtar
         x, y, gen, yuk = self._kart_rect
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 10, 140, 14)
+        goruntu = self._cam(parca, 18, 102, 14)
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._kart_hash:
             return
@@ -415,7 +425,7 @@ class Dock(QWidget):
         return resim
 
     @staticmethod
-    def _golge_uret(gen: int, yuk: int, kat: int = 6) -> QImage:
+    def _golge_uret(gen: int, yuk: int, kat: int = 6, ic: int = 0, yaricap: int = 20) -> QImage:
         """Panel golgesini bir kez uretir (yuvarlat + ucuz blur).
 
         Onceden QML'de golge bir layer + MultiEffect idi ve panel genisligi
@@ -427,7 +437,7 @@ class Dock(QWidget):
         boya.setRenderHint(QPainter.Antialiasing, True)
         boya.setPen(Qt.NoPen)
         boya.setBrush(QColor(0, 0, 0, 150))
-        boya.drawRoundedRect(0, 0, gen, yuk, 20, 20)
+        boya.drawRoundedRect(ic, ic, gen - 2 * ic, yuk - 2 * ic, yaricap, yaricap)
         boya.end()
         kucuk = resim.scaled(
             max(2, gen // kat), max(2, yuk // kat), Qt.IgnoreAspectRatio, Qt.SmoothTransformation
@@ -437,11 +447,15 @@ class Dock(QWidget):
     def _muzik_arkaplan_yenile(self) -> None:
         if self._tam is None or self._muzik_rect is None:
             return
+        anahtar = (self._tam_surum, self._muzik_rect)
+        if anahtar == self._muzik_anahtar:
+            return
+        self._muzik_anahtar = anahtar
         x, y, gen, yuk = self._muzik_rect
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 10, 140, 14)
+        goruntu = self._cam(parca, 18, 102, 14)
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._muzik_hash:
             return
@@ -469,6 +483,7 @@ class Dock(QWidget):
             return
         tam = resim.toImage().convertToFormat(QImage.Format_RGBA8888)
         self._tam = tam
+        self._tam_surum += 1
         panel = tam.copy(
             QRect(
                 self._panel_x,
