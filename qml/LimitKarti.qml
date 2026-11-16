@@ -73,6 +73,7 @@ Item {
             color: halka.yuzde < 0 ? kart.ikincil : halka.renk(halka.yuzde)
             font.pixelSize: 15
             font.bold: true
+            font.family: "Geist Mono"
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
@@ -87,6 +88,7 @@ Item {
             text: halka.kalan(halka.reset)
             color: kart.ucuncul
             font.pixelSize: 10
+            font.family: "Geist Mono"
         }
     }
 

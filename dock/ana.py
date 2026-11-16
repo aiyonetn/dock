@@ -21,7 +21,7 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath
+from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QImage, QPainter, QPainterPath
 from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
@@ -638,8 +638,26 @@ class Dock(QWidget):
             self.gizle()
 
 
+def _fontlari_yukle() -> str:
+    aileler: dict[str, str] = {}
+    for dosya in sorted((KOK / "assets" / "fonts").glob("*.ttf")):
+        kimlik = QFontDatabase.addApplicationFont(str(dosya))
+        if kimlik < 0:
+            print(f"HATA: font yuklenemedi: {dosya.name}", flush=True)
+            return ""
+        for aile in QFontDatabase.applicationFontFamilies(kimlik):
+            aileler[aile] = dosya.name
+    if "Geist" not in aileler or "Geist Mono" not in aileler:
+        print(f"HATA: Geist aileleri bulunamadi: {aileler}", flush=True)
+        return ""
+    QApplication.setFont(QFont("Geist", 11))
+    return aileler["Geist"]
+
+
 def calistir() -> int:
     uygulama = QApplication([])
+    if not _fontlari_yukle():
+        return 1
     uygulama.setApplicationName("dock")
     uygulama.setQuitOnLastWindowClosed(True)
 

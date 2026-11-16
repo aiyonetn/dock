@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 from pathlib import Path
+import os
 from urllib.request import urlopen
 
 from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot, Qt
@@ -20,7 +21,7 @@ class MuzikModel(QObject):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self._baslik = _DEMO_BASLIK
+        self._baslik = os.environ.get("DOCK_DEMO_TR") and "Şişli'de Öğle Güneşi · Çığlık" or _DEMO_BASLIK
         self._sanatci = _DEMO_SANATCI
         self._album = "Single"
         self._kapak = self._demo_kapak()
@@ -187,7 +188,7 @@ class MuzikModel(QObject):
             self._iface = None
             self._servis = ""
             self._demo = True
-            self._baslik = _DEMO_BASLIK
+            self._baslik = os.environ.get("DOCK_DEMO_TR") and "Şişli'de Öğle Güneşi · Çığlık" or _DEMO_BASLIK
             self._sanatci = _DEMO_SANATCI
             self._album = "Demo"
             self._kapak = self._demo_kapak()

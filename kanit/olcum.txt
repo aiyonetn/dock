@@ -19,3 +19,7 @@ C19: maskesiz kart acik, 20 sn: CPU %1.15
 V10: pencere yan payi 120 px (pencere 1604 px, x=-82); tek-ikon hover.
 V10: komsu oranlari 0.45/0.15 denendi -> panel 1485 px > 1440, kirpilma; bu yuzden 0.
 V10: uc simge hover: sol/sag tasma = 0 px (panel max 1439.6, simge sol 16 / sag 1424)
+
+
+Font: kart kapali, 12 sn: CPU %0.42
+Font: kart acik, 12 sn: CPU %1.58

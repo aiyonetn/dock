@@ -68,3 +68,10 @@ ve geri / oynat-duraklat / ileri düğmeleri.
 - Gerçek saydamlık (picom) denendi: sistemde `picom`/`compton` yok, `sudo`
   olmadan kurulum yapılamıyor; AppImage indirilemedi. Bu nedenle kompozit cam
   tekniği korunuyor.
+
+## Fontlar
+
+Geist + Geist Mono (SIL OFL, `assets/fonts/`). Açılışta tüm TTF'ler
+`QFontDatabase.addApplicationFont` ile yüklenir; aile bulunamaz veya yükleme
+başarısız olursa uygulama hata basıp çıkar. Varsayılan `Geist 11`; yüzdeler,
+süreler, geri sayımlar ve halka içi değerler `Geist Mono` kullanır.
