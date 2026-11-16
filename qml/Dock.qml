@@ -227,74 +227,35 @@ Item {
                     asynchronous: true
                 }
 
-                Row {
+                Item {
                     visible: model.kimlik === "muzik.desktop"
                     anchors.horizontalCenter: kutu.horizontalCenter
                     anchors.bottom: kutu.bottom
                     anchors.bottomMargin: 6
-                    spacing: 2
-                    Rectangle {
-                        width: 2; height: 3; color: "#F7F7F8"; radius: 1
-                        SequentialAnimation on height {
-                            running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
-                            loops: Animation.Infinite
-                            NumberAnimation { to: 12; duration: 320; easing.type: Easing.InOutSine }
-                            NumberAnimation { to: 6; duration: 320; easing.type: Easing.InOutSine }
-                        }
+                    width: 10
+                    height: 12
+                    property real faz: 0
+                    Timer {
+                        interval: 250
+                        repeat: true
+                        running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
+                            && kok.fareX >= 0
+                        onTriggered: parent.faz += 0.9
                     }
                     Rectangle {
-                        width: 2; height: 9; color: "#F7F7F8"; radius: 1
-                        SequentialAnimation on height {
-                            running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
-                            loops: Animation.Infinite
-                            NumberAnimation { to: 6; duration: 420; easing.type: Easing.InOutSine }
-                            NumberAnimation { to: 12; duration: 420; easing.type: Easing.InOutSine }
-                        }
+                        x: 0; width: 2; radius: 1; color: "#F7F7F8"
+                        height: muzikModel.caliyor ? 6 + 6 * Math.abs(Math.sin(parent.faz)) : 3
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                     Rectangle {
-                        width: 2; height: 5; color: "#F7F7F8"; radius: 1
-                        SequentialAnimation on height {
-                            running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
-                            loops: Animation.Infinite
-                            NumberAnimation { to: 12; duration: 520; easing.type: Easing.InOutSine }
-                            NumberAnimation { to: 6; duration: 520; easing.type: Easing.InOutSine }
-                        }
+                        x: 4; width: 2; radius: 1; color: "#F7F7F8"
+                        height: muzikModel.caliyor ? 6 + 6 * Math.abs(Math.sin(parent.faz + 2.1)) : 3
+                        anchors.verticalCenter: parent.verticalCenter
                     }
-                }
-
-                // AI oturum halkasi: ikonun 2 px disinda, yuzde kadar dolu.
-                Canvas {
-                    id: aiHalka
-                    visible: model.kimlik === "ai-limit.desktop" && aiHalka.yuzde >= 0
-                    anchors.centerIn: kutu
-                    width: kutu.width * 0.9
-                    height: width
-                    property real yuzde: {
-                        var p = limitModel.codex && limitModel.codex.session
-                            ? limitModel.codex.session.percent : null
-                        return (p === null || p === undefined) ? -1 : p
-                    }
-                    onYuzdeChanged: requestPaint()
-                    Connections {
-                        target: limitModel
-                        function onVeriDegisti() { aiHalka.requestPaint() }
-                    }
-                    onPaint: {
-                        var c = getContext("2d")
-                        c.reset()
-                        var m = width / 2
-                        var r = m - 2
-                        c.lineWidth = 2
-                        c.strokeStyle = "#ffffff1a"
-                        c.beginPath(); c.arc(m, m, r, 0, Math.PI * 2); c.stroke()
-                        if (aiHalka.yuzde >= 0) {
-                            c.strokeStyle = aiHalka.yuzde < 50 ? "#F7F7F8"
-                                : aiHalka.yuzde < 80 ? "#F5C542" : "#F05B5B"
-                            c.beginPath()
-                            c.arc(m, m, r, -Math.PI / 2,
-                                -Math.PI / 2 + Math.PI * 2 * Math.min(1, aiHalka.yuzde / 100))
-                            c.stroke()
-                        }
+                    Rectangle {
+                        x: 8; width: 2; radius: 1; color: "#F7F7F8"
+                        height: muzikModel.caliyor ? 6 + 6 * Math.abs(Math.sin(parent.faz + 4.2)) : 3
+                        anchors.verticalCenter: parent.verticalCenter
                     }
                 }
 
