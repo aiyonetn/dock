@@ -26,7 +26,7 @@ from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from . import ayarlar, ikon, x11
+from . import ayarlar, ikon, tema, x11
 from .limit_model import LimitModel, LimitYonetici
 from .muzik import MuzikModel
 from .model import IkonModel
@@ -228,6 +228,15 @@ class Dock(QWidget):
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
         baglam.setContextProperty("_pencereSol", self._x)
         baglam.setContextProperty("_ekranGenislik", self._ekran.width())
+        baglam.setContextProperty(
+            "yaricaplar",
+            {
+                "panel": tema.PANEL_YARICAP,
+                "kart": tema.KART_YARICAP,
+                "kartKapak": tema.KART_KAPAK_YARICAP,
+                "ikonKapak": round(64 * 0.8 * tema.IKON_KAPAK_ORAN),
+            },
+        )
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
         )

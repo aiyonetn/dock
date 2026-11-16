@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 
 Item {
     id: kok
@@ -218,15 +219,35 @@ Item {
                     asynchronous: true
                 }
 
-                Image {
+                Item {
+                    id: muzikKapakKutu
                     visible: model.kimlik === "muzik.desktop" && muzikModel.kapak !== ""
                     anchors.centerIn: kutu
                     width: kutu.width * 0.8
                     height: width
-                    source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
-                    fillMode: Image.PreserveAspectCrop
-                    smooth: true
-                    asynchronous: true
+
+                    Image {
+                        id: muzikKapakKaynak
+                        anchors.fill: parent
+                        source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
+                        fillMode: Image.PreserveAspectCrop
+                        smooth: true
+                        asynchronous: true
+                        visible: false
+                    }
+                    Rectangle {
+                        id: muzikKapakMaske
+                        anchors.fill: parent
+                        radius: yaricaplar.ikonKapak
+                        color: "white"
+                        layer.enabled: true
+                        visible: false
+                    }
+                    OpacityMask {
+                        anchors.fill: parent
+                        source: muzikKapakKaynak
+                        maskSource: muzikKapakMaske
+                    }
                 }
 
                 Item {
