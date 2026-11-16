@@ -204,6 +204,7 @@ Item {
                 // Ikon + gomulu yumusak golge (1 px asagi, 6 px blur).
                 Image {
                     id: simge
+                    visible: model.kimlik !== "muzik.desktop"
                     anchors.centerIn: kutu
                     width: kutu.width
                     height: width
@@ -215,6 +216,50 @@ Item {
                     smooth: true
                     mipmap: false
                     asynchronous: true
+                }
+
+                Image {
+                    visible: model.kimlik === "muzik.desktop" && muzikModel.kapak !== ""
+                    anchors.fill: kutu
+                    source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
+                    fillMode: Image.PreserveAspectCrop
+                    smooth: true
+                    asynchronous: true
+                }
+
+                Row {
+                    visible: model.kimlik === "muzik.desktop"
+                    anchors.horizontalCenter: kutu.horizontalCenter
+                    anchors.bottom: kutu.bottom
+                    anchors.bottomMargin: 6
+                    spacing: 2
+                    Rectangle {
+                        width: 2; height: 3; color: "#F7F7F8"; radius: 1
+                        SequentialAnimation on height {
+                            running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 12; duration: 320; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 6; duration: 320; easing.type: Easing.InOutSine }
+                        }
+                    }
+                    Rectangle {
+                        width: 2; height: 9; color: "#F7F7F8"; radius: 1
+                        SequentialAnimation on height {
+                            running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 6; duration: 420; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 12; duration: 420; easing.type: Easing.InOutSine }
+                        }
+                    }
+                    Rectangle {
+                        width: 2; height: 5; color: "#F7F7F8"; radius: 1
+                        SequentialAnimation on height {
+                            running: muzikModel.caliyor && model.kimlik === "muzik.desktop"
+                            loops: Animation.Infinite
+                            NumberAnimation { to: 12; duration: 520; easing.type: Easing.InOutSine }
+                            NumberAnimation { to: 6; duration: 520; easing.type: Easing.InOutSine }
+                        }
+                    }
                 }
 
                 Rectangle {

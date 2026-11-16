@@ -1,8 +1,13 @@
 """Simdi caliyor: MPRIS (QtDBus) veya demo oynatici."""
 from __future__ import annotations
 
-from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot
+import hashlib
+from pathlib import Path
+from urllib.request import urlopen
+
+from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot, Qt
 from PySide6.QtDBus import QDBusConnection, QDBusInterface
+from PySide6.QtGui import QColor, QImage, QLinearGradient, QPainter, QPainterPath
 
 _MPRIS_ON_EK = "org.mpris.MediaPlayer2."
 _DEMO_BASLIK = "Midnight Drive"
@@ -18,7 +23,7 @@ class MuzikModel(QObject):
         self._baslik = _DEMO_BASLIK
         self._sanatci = _DEMO_SANATCI
         self._album = "Single"
-        self._kapak = ""
+        self._kapak = self._demo_kapak()
         self._sure = _DEMO_SURE
         self._konum = 72_000
         self._caliyor = True
@@ -33,6 +38,82 @@ class MuzikModel(QObject):
         self._zaman.timeout.connect(self._tik)
         self._zaman.start()
         self._mpris_ara()
+
+    def _kapak_dizini(self) -> Path:
+        yol = Path.home() / ".cache" / "dock" / "kapak"
+        yol.mkdir(parents=True, exist_ok=True)
+        return yol
+
+    @staticmethod
+    def _yuvarlat(resim: QImage, yaricap: int) -> QImage:
+        resim = resim.convertToFormat(QImage.Format_ARGB32)
+        boya = QPainter(resim)
+        boya.setRenderHint(QPainter.Antialiasing, True)
+        boya.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+        yol = QPainterPath()
+        yol.addRoundedRect(0, 0, resim.width(), resim.height(), yaricap, yaricap)
+        boya.fillPath(yol, Qt.black)
+        boya.end()
+        return resim
+
+    def _demo_kapak(self) -> str:
+        hedef = self._kapak_dizini() / "demo.png"
+        if hedef.is_file():
+            return str(hedef)
+        resim = QImage(176, 176, QImage.Format_ARGB32)
+        boya = QPainter(resim)
+        boya.setRenderHint(QPainter.Antialiasing, True)
+        gradyan = QLinearGradient(0, 0, 176, 176)
+        gradyan.setColorAt(0.0, QColor("#7c5cff"))
+        gradyan.setColorAt(1.0, QColor("#35b6ff"))
+        boya.fillRect(0, 0, 176, 176, gradyan)
+        boya.setPen(Qt.NoPen)
+        boya.setBrush(QColor("#ffffff"))
+        boya.drawEllipse(58, 108, 26, 22)
+        boya.drawRect(79, 46, 7, 70)
+        boya.setBrush(QColor("#ffffff"))
+        yol = QPainterPath()
+        yol.moveTo(86, 46)
+        yol.quadTo(122, 52, 128, 82)
+        yol.lineTo(117, 76)
+        yol.quadTo(108, 60, 86, 60)
+        boya.drawPath(yol)
+        boya.end()
+        self._yuvarlat(resim, 24).save(str(hedef))
+        return str(hedef)
+
+    def _kapak_hazirla(self, url: str) -> str:
+        if not url:
+            return self._demo_kapak()
+        if url.startswith("file://"):
+            url = url[7:]
+        if url.startswith("http://") or url.startswith("https://"):
+            ad = hashlib.sha1(url.encode()).hexdigest()[:16]
+            hedef = self._kapak_dizini() / f"{ad}.png"
+            if hedef.is_file():
+                return str(hedef)
+            try:
+                veri = urlopen(url, timeout=8).read()
+                gecici = hedef.with_suffix(".tmp")
+                gecici.write_bytes(veri)
+                resim = QImage(str(gecici))
+                gecici.unlink(missing_ok=True)
+            except Exception as hata:
+                print("kapak indirilemedi:", hata, flush=True)
+                return self._demo_kapak()
+        else:
+            resim = QImage(url)
+            if resim.isNull():
+                return self._demo_kapak()
+            hedef = self._kapak_dizini() / (hashlib.sha1(url.encode()).hexdigest()[:16] + ".png")
+        if resim.isNull():
+            return self._demo_kapak()
+        taraf = min(resim.width(), resim.height())
+        resim = resim.copy(
+            (resim.width() - taraf) // 2, (resim.height() - taraf) // 2, taraf, taraf
+        ).scaled(176, 176, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        self._yuvarlat(resim, 24).save(str(hedef))
+        return str(hedef)
 
     # --- ozellikler --------------------------------------------------------
     def _oku(self, ad: str):
@@ -91,7 +172,7 @@ class MuzikModel(QObject):
             self._baslik = _DEMO_BASLIK
             self._sanatci = _DEMO_SANATCI
             self._album = "Demo"
-            self._kapak = ""
+            self._kapak = self._demo_kapak()
             self._sure = _DEMO_SURE
             self._konum = 0
             self._caliyor = True
@@ -116,7 +197,7 @@ class MuzikModel(QObject):
         self._baslik = str(meta.get("xesam:title") or "")
         self._sanatci = str(sanatci)
         self._album = str(meta.get("xesam:album") or "")
-        self._kapak = str(meta.get("mpris:artUrl") or "")
+        self._kapak = self._kapak_hazirla(str(meta.get("mpris:artUrl") or ""))
         self._sure = int(int(meta.get("mpris:length") or 0) / 1000)
         self._konum = int(konum / 1000)
         self._caliyor = durum == "Playing"
