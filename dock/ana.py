@@ -1,6 +1,7 @@
 """Dock penceresi, arka plan yakalama ve otomatik gizlenme."""
 from __future__ import annotations
 
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -119,6 +120,8 @@ class Dock(QWidget):
         self.kopru.kartKapat.connect(lambda: self._kart_ayarla(False))
         self.limit_model = LimitModel(self)
         self.limit_yonetici = LimitYonetici(self.limit_model, self)
+        self._kart_bekle = False
+        self.limit_yonetici.veriHazir.connect(self._ilk_limit_karti)
         self.saglayici = ArkaplanSaglayici()
         self._sayac = 0
         self._gorunur = False
@@ -198,6 +201,13 @@ class Dock(QWidget):
 
         self._animasyon = QPropertyAnimation(self, b"pos", self)
         self._animasyon.setEasingCurve(QEasingCurve.OutCubic)
+
+    @Slot(object)
+    def _ilk_limit_karti(self, veri: dict) -> None:
+        # KANIT/otomasyon: DOCK_KART=limit ise ilk veri gelince karti ac.
+        if os.environ.get("DOCK_KART") == "limit" and not self._kart_bekle:
+            self._kart_bekle = True
+            self._kart_ayarla(True)
 
     def _kart_ayarla(self, acik: bool) -> None:
         kok = self.gorunum.rootObject()
