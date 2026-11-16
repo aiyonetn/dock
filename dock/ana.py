@@ -242,7 +242,7 @@ class Dock(QWidget):
         )
         # Golge gorseli: her karede blur yerine tek dokulu dikdortgen.
         self.saglayici.goruntuler["golge"] = self._golge_uret(
-            self._taban_panel_genislik + 40, self._panel_yukseklik + 40, 6, 20, 20
+            self._taban_panel_genislik + 40, self._panel_yukseklik + 40, 6, 20, tema.PANEL_YARICAP
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, tema.KART_YARICAP)
@@ -488,7 +488,7 @@ class Dock(QWidget):
 
     @staticmethod
     def _bulanik(resim: QImage, kat: int = 10) -> QImage:
-        return Dock._cam(resim, kat, 150, 20)
+        return Dock._cam(resim, kat, 150, tema.PANEL_YARICAP)
 
     def _kart_arkaplan_yenile(self) -> None:
         if self._tam is None or self._kart_rect is None:

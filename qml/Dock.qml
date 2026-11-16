@@ -119,7 +119,7 @@ Item {
 
         Rectangle {
             anchors.fill: parent
-            radius: 20
+            radius: yaricaplar.panel
             color: "#00000000"
             border.width: 1
             border.color: "#14ffffff"
