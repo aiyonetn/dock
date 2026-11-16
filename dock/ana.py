@@ -21,7 +21,7 @@ from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from . import ayarlar
+from . import ayarlar, ikon
 from .model import IkonModel
 from .uygulamalar import (
     Uygulama,
@@ -307,21 +307,24 @@ def calistir() -> int:
     uygulama.setQuitOnLastWindowClosed(True)
 
     tarama = tara(56)
-    onerilen = onerilen_uygulamalar(tarama)
-    if len(onerilen) < 7:
+    hazir: list[Uygulama] = []
+    for aday in onerilen_uygulamalar(tarama):
+        islenmis = ikon.hazirla(aday.ikon)
+        if islenmis:
+            aday.ikon = islenmis
+            hazir.append(aday)
+    onerilen = hazir
+    if len(onerilen) < 8:
         print(
-            f"HATA: yalnizca {len(onerilen)} gercek ikon bulundu, en az 7 gerekli",
+            f"HATA: yalnizca {len(onerilen)} seffaf ikon bulundu, en az 8 gerekli",
             flush=True,
         )
         return 1
-    kimlikler = {u.kimlik for u in onerilen}
-    havuz = onerilen + [
-        u for u in tarama if u.ikon and u.kimlik not in kimlikler
-    ]
+    havuz = onerilen
     varsayilan = varsayilan_secim(onerilen)
     ayar = ayarlar.yukle(varsayilan)
     gecerli = [k for k in ayar["sabitlenen"] if k in {u.kimlik for u in havuz}]
-    if len(gecerli) < 7:
+    if len(gecerli) < 8:
         ayar["sabitlenen"] = list(varsayilan)
         ayarlar.kaydet(ayar)
     secili = secilenler(havuz, ayar["sabitlenen"])

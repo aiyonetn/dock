@@ -37,7 +37,7 @@ IKON_UZANTILARI = ("png", "svg", "svgz")
 YER_TUTUCU = Path(__file__).resolve().parent.parent / "assets" / "ikon-yok.svg"
 
 _DOSYA_SINIRI = 40
-_ONBELLEK_SURUM = 3
+_ONBELLEK_SURUM = 4
 
 # Varsayilan dock: yalnizca gercek ikonu cozulen uygulamalar girer.
 # (kimlik, ikon adi, komut adaylari) — .desktop yoksa komut /usr/bin'den aranir.
@@ -49,9 +49,11 @@ ONERILEN = [
     ("vlc.desktop", "vlc", ("vlc",)),
     ("gimp.desktop", "gimp", ("gimp",)),
     ("libreoffice-writer.desktop", "libreoffice-writer", ("libreoffice", "libreoffice-writer")),
-    ("org.gnome.Nautilus.desktop", "org.gnome.Nautilus", ("nautilus",)),
     ("thunderbird.desktop", "thunderbird", ("thunderbird",)),
     ("spotify.desktop", "spotify", ("spotify",)),
+    ("discord.desktop", "discord", ("discord",)),
+    ("telegram.desktop", "telegram", ("telegram-desktop", "telegram")),
+    ("steam.desktop", "steam", ("steam",)),
 ]
 _EN_AZ_IKON = 7
 
@@ -128,8 +130,20 @@ def _dizin_esle(dizin: Path) -> dict[str, Path] | None:
         return None
 
 
+def _ada_gore(dizin: Path, ad: str) -> Path | None:
+    kucuk = ad.casefold()
+    for uzanti in IKON_UZANTILARI:
+        aday = dizin / f"{ad}.{uzanti}"
+        if aday.is_file():
+            return aday
+    esleme = _dizin_esle(dizin)
+    if esleme and kucuk in esleme:
+        return esleme[kucuk]
+    return None
+
+
 def ikon_bul(ikon_adi: str) -> str:
-    """Ikon dosyasini tema yollarinda arar; 64 px kaynak oncelikli."""
+    """SVG -> 256/128/64 px PNG sirasi; 48 px alti kullanilmaz."""
     if not ikon_adi:
         return ""
     yol = Path(ikon_adi)
@@ -144,24 +158,20 @@ def ikon_bul(ikon_adi: str) -> str:
     if not ad:
         return ""
 
-    kucuk = ad.casefold()
-    for kok in (*HICOLOR_KOKLERI, *TEMA_KOKLERI):
-        for boyut in IKON_BOYUTLARI:
-            dizin = kok / f"{boyut}x{boyut}" / "apps"
-            for uzanti in IKON_UZANTILARI:
-                aday = dizin / f"{ad}.{uzanti}"
-                if aday.is_file():
-                    return str(aday)
-            # Buyuk/kucuk harf farki (or. Spotify.svg).
-            esleme = _dizin_esle(dizin)
-            if esleme and kucuk in esleme:
-                return str(esleme[kucuk])
-        for uzanti in IKON_UZANTILARI:
-            aday = kok / "scalable" / "apps" / f"{ad}.{uzanti}"
-            if aday.is_file():
+    kokler = (*HICOLOR_KOKLERI, *TEMA_KOKLERI)
+    # 1) SVG
+    for kok in kokler:
+        for boyut in ("scalable", "64x64"):
+            aday = _ada_gore(kok / boyut / "apps", ad)
+            if aday is not None and aday.suffix.lower() == ".svg":
                 return str(aday)
-
-    for uzanti in IKON_UZANTILARI:
+    # 2) 256 / 128 / 64 px PNG
+    for boyut in (256, 128, 64):
+        for kok in kokler:
+            aday = _ada_gore(kok / f"{boyut}x{boyut}" / "apps", ad)
+            if aday is not None and aday.suffix.lower() in (".png", ".svg"):
+                return str(aday)
+    for uzanti in ("png", "svg"):
         aday = PIXMAPS / f"{ad}.{uzanti}"
         if aday.is_file():
             return str(aday)
@@ -270,7 +280,7 @@ def onerilen_uygulamalar(mevcut: list[Uygulama]) -> list[Uygulama]:
     return sonuc
 
 
-def varsayilan_secim(uygulamalar: list[Uygulama], adet: int = 10) -> list[str]:
+def varsayilan_secim(uygulamalar: list[Uygulama], adet: int = 12) -> list[str]:
     """Oncelikli ve ikonu cozulen uygulamalar; harf kutusu asla secilmez."""
     indeks = {u.kimlik: u for u in uygulamalar}
     secili = [k for k, _, _ in ONERILEN if k in indeks and indeks[k].ikon]
@@ -278,7 +288,7 @@ def varsayilan_secim(uygulamalar: list[Uygulama], adet: int = 10) -> list[str]:
     return (secili + [u.kimlik for u in kalan])[:adet]
 
 
-def secilenler(uygulamalar: list[Uygulama], sabitlenen: list[str], adet: int = 10) -> list[Uygulama]:
+def secilenler(uygulamalar: list[Uygulama], sabitlenen: list[str], adet: int = 12) -> list[Uygulama]:
     """sabitlenen kimliklerini korur; ikonsuz veya eksikse varsayilana duser."""
     indeks = {u.kimlik: u for u in uygulamalar}
     secili = [indeks[k] for k in sabitlenen if k in indeks and indeks[k].ikon]

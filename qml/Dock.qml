@@ -158,28 +158,38 @@ Item {
                 property real olcekDeger: kok.hedefOlcek(index)
                 property int parlamaSurum: model.parlama
                 property real parParlama: 0
+                property bool uzerinde: false
                 Behavior on olcekDeger {
                     NumberAnimation { duration: 140; easing.type: Easing.OutQuad }
                 }
 
-                Rectangle {
+                Item {
                     id: kutu
                     anchors.horizontalCenter: parent.horizontalCenter
                     anchors.bottom: parent.bottom
                     width: kok.ikonBoyut * hucre.olcekDeger
                     height: width
-                    radius: width * 0.24
-                    color: "#1affffff"
                 }
 
-                Image {
+                // 44x44 hafif yuva; plaka degil.
+                Rectangle {
                     anchors.centerIn: kutu
-                    width: kutu.width * 0.9
+                    width: 44
+                    height: width
+                    radius: 12
+                    color: hucre.uzerinde ? "#1fffffff" : "#10ffffff"
+                }
+
+                // Ikon + gomulu yumusak golge (1 px asagi, 6 px blur).
+                Image {
+                    id: simge
+                    anchors.centerIn: kutu
+                    width: kutu.width
                     height: width
                     source: model.ikon && model.ikon.length > 0
                         ? "file://" + model.ikon : ""
-                    sourceSize.width: 64
-                    sourceSize.height: 64
+                    sourceSize.width: 160
+                    sourceSize.height: 160
                     fillMode: Image.PreserveAspectFit
                     smooth: true
                     mipmap: true
@@ -187,8 +197,10 @@ Item {
                 }
 
                 Rectangle {
-                    anchors.fill: kutu
-                    radius: kutu.radius
+                    anchors.centerIn: kutu
+                    width: kutu.width * 0.78
+                    height: width
+                    radius: 12 * hucre.olcekDeger
                     color: kok.vurgu
                     opacity: hucre.parParlama * 0.55
                 }
@@ -237,8 +249,12 @@ Item {
                     anchors.fill: kutu
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onEntered: ipucuZaman.start()
+                    onEntered: {
+                        hucre.uzerinde = true
+                        ipucuZaman.start()
+                    }
                     onExited: {
+                        hucre.uzerinde = false
                         ipucuZaman.stop()
                         if (kok.ipucu === index)
                             kok.ipucu = -1
