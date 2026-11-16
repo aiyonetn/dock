@@ -31,16 +31,24 @@ Item {
             if (p < 80) return "#F5C542"
             return "#F05B5B"
         }
-        function kalan(epoch) {
-            if (!epoch || epoch <= 0) return "—"
+        function kalanParcalar(epoch) {
+            if (!epoch || epoch <= 0) return [{metin: "—", mono: false}]
             var d = Math.floor(epoch - kart.simdi)
-            if (d <= 0) return "şimdi"
+            if (d <= 0) return [{metin: "şimdi", mono: false}]
             var gun = Math.floor(d / 86400)
             var sa = Math.floor((d % 86400) / 3600)
             var dk = Math.floor((d % 3600) / 60)
-            if (gun > 0) return gun + " gün" + (sa > 0 ? " " + sa + " sa" : "")
-            if (sa > 0) return sa + " sa" + (dk > 0 ? " " + dk + " dk" : "")
-            return Math.max(1, dk) + " dk"
+            var p = []
+            if (gun > 0) {
+                p.push({metin: gun, mono: true}, {metin: " gün", mono: false})
+                if (sa > 0) p.push({metin: " " + sa, mono: true}, {metin: " sa", mono: false})
+            } else if (sa > 0) {
+                p.push({metin: sa, mono: true}, {metin: " sa", mono: false})
+                if (dk > 0) p.push({metin: " " + dk, mono: true}, {metin: " dk", mono: false})
+            } else {
+                p.push({metin: Math.max(1, dk), mono: true}, {metin: " dk", mono: false})
+            }
+            return p
         }
 
         Canvas {
@@ -84,11 +92,21 @@ Item {
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 78
-            text: halka.kalan(halka.reset)
-            color: kart.ucuncul
-            font.pixelSize: 10
-            font.family: "Geist Mono"
+            y: 98
+            height: 12
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 0
+                Repeater {
+                    model: halka.kalanParcalar(halka.reset)
+                    Text {
+                        text: modelData.metin
+                        color: kart.ucuncul
+                        font.pixelSize: 10
+                        font.family: modelData.mono ? "Geist Mono" : "Geist"
+                    }
+                }
+            }
         }
     }
 
