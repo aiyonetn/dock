@@ -113,8 +113,13 @@ class MuzikModel(QObject):
     def _kapak_isle(self, url: str) -> tuple[str, str] | None:
         """Kapagi indir/coz, 176 px yuvarlak JPEG + renk JSON onbellege yaz."""
         self._islem_sayaci += 1
-        if os.environ.get("DOCK_KAPAK_LOG"):
-            print(f"kapak-islem {self._islem_sayaci} {url[:80]}", flush=True)
+        gunluk = os.environ.get("DOCK_KAPAK_LOG")
+        if gunluk:
+            try:
+                with open(gunluk, "a", encoding="utf-8") as dosya:
+                    dosya.write(f"kapak-islem {self._islem_sayaci} {url}\n")
+            except OSError:
+                pass
         if not url:
             return None
         ad = hashlib.sha1(url.encode()).hexdigest()

@@ -469,9 +469,9 @@ class Dock(QWidget):
         ton = QColor(10, 10, 10)
         if renk is not None and renk.isValid():
             ton = QColor(
-                int(10 * 0.75 + renk.red() * 0.25),
-                int(10 * 0.75 + renk.green() * 0.25),
-                int(10 * 0.75 + renk.blue() * 0.25),
+                int(10 * 0.5 + renk.red() * 0.5),
+                int(10 * 0.5 + renk.green() * 0.5),
+                int(10 * 0.5 + renk.blue() * 0.5),
             )
         boya.fillRect(bulanik.rect(), QColor(ton.red(), ton.green(), ton.blue(), alfa))
         boya.end()
