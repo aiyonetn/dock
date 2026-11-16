@@ -10,12 +10,12 @@ Item {
     property string vurgu: "#8fb4ff"
 
     // Referans olculeri: ikon 56, panel 76, yan 12, ara 8, alt bosluk 10.
-    readonly property real ikonBoyut: 56
+    readonly property real ikonBoyut: ayar ? ayar.iconSize : 68
     readonly property real buyutmeCarpan: ayar ? ayar.buyutme : 1.9
-    readonly property real bosluk: 8
-    readonly property real yanBosluk: 12
-    readonly property real icBosluk: 10
-    readonly property real panelYukseklik: 76
+    readonly property real bosluk: 10
+    readonly property real yanBosluk: 14
+    readonly property real icBosluk: Math.round((panelYukseklik - ikonBoyut) / 2)
+    readonly property real panelYukseklik: 92
     readonly property real altPay: 10
     readonly property real hucreYuksekligi: Math.round(ikonBoyut * buyutmeCarpan)
     readonly property real tabanGenislik: ikonSayisi > 0
@@ -158,7 +158,6 @@ Item {
                 property real olcekDeger: kok.hedefOlcek(index)
                 property int parlamaSurum: model.parlama
                 property real parParlama: 0
-                property bool uzerinde: false
                 Behavior on olcekDeger {
                     NumberAnimation { duration: 140; easing.type: Easing.OutQuad }
                 }
@@ -169,15 +168,6 @@ Item {
                     anchors.bottom: parent.bottom
                     width: kok.ikonBoyut * hucre.olcekDeger
                     height: width
-                }
-
-                // 44x44 hafif yuva; plaka degil.
-                Rectangle {
-                    anchors.centerIn: kutu
-                    width: 44
-                    height: width
-                    radius: 12
-                    color: hucre.uzerinde ? "#1fffffff" : "#10ffffff"
                 }
 
                 // Ikon + gomulu yumusak golge (1 px asagi, 6 px blur).
@@ -249,12 +239,8 @@ Item {
                     anchors.fill: kutu
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
-                    onEntered: {
-                        hucre.uzerinde = true
-                        ipucuZaman.start()
-                    }
+                    onEntered: ipucuZaman.start()
                     onExited: {
-                        hucre.uzerinde = false
                         ipucuZaman.stop()
                         if (kok.ipucu === index)
                             kok.ipucu = -1

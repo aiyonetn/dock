@@ -34,11 +34,11 @@ from .uygulamalar import (
 
 KOK = Path(__file__).resolve().parent.parent
 
-_ALAN_BOSLUK = 8
-_YAN_BOSLUK = 12
-_PANEL_YUKSEKLIK = 76
-_PANEL_DIKEY_BOSLUK = 10
-_ALT_PAY = 10
+_ALAN_BOSLUK = 10
+_YAN_BOSLUK = 14
+_PANEL_YUKSEKLIK = 92
+_PANEL_DIKEY_BOSLUK = 12
+_ALT_PAY = 12
 # Pencere opak: buyuyen ikonlar icin panel ustunde pay, golge icin altta 10 px.
 # Kalan alan masaustu goruntusuyle doldurulur; saydamlik/compositor gerekmez.
 _PENCERE_UST_PAY = 80

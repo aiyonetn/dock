@@ -16,7 +16,7 @@ from pathlib import Path
 p = Path.home() / ".config" / "dock" / "ayar.json"
 p.parent.mkdir(parents=True, exist_ok=True)
 veri = json.loads(p.read_text()) if p.is_file() else {
-    "autoHide": False, "iconSize": 56, "buyutme": 1.9, "kenarBosluk": 24, "sabitlenen": []}
+    "autoHide": False, "iconSize": 68, "buyutme": 1.9, "kenarBosluk": 12, "sabitlenen": []}
 veri[sys.argv[1]] = json.loads(sys.argv[2])
 p.write_text(json.dumps(veri, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 PY
@@ -40,6 +40,10 @@ basla() {
     sleep 2
 }
 
+cfg sabitlenen '[]'
+cfg kenarBosluk 12
+cfg iconSize 68
+cfg autoHide false
 # 3. ikonun ekran koordinati (varsayilan ayarlarla hesaplanir).
 read -r IX IY < <("$PY" - <<'PY'
 import json
@@ -51,12 +55,12 @@ ayar = {**VARSAYILAN, **json.loads(p.read_text())}
 u = tara()
 h = onerilen_uygulamalar(u)
 sec = secilenler(h, ayar["sabitlenen"])
-ikon = int(ayar["iconSize"]); bosluk = 8; yan = 12
+ikon = int(ayar["iconSize"]); bosluk = 10; yan = 14
 panel = ikon * len(sec) + bosluk * max(0, len(sec) - 1) + 2 * yan
 sol = (1440 - panel) // 2
 x = sol + yan + 2 * (ikon + bosluk) + ikon // 2
 # panel ekran altindan 10 px yukarida, ikon panel icinde 10 px altta
-y = 900 - 10 - 10 - ikon // 2
+y = 900 - 12 - 12 - ikon // 2
 print(x, y)
 PY
 )
@@ -64,9 +68,6 @@ PY
 trap durdur EXIT
 
 # --- 01-03: sabit panel -----------------------------------------------------
-cfg sabitlenen '[]'
-cfg kenarBosluk 10
-cfg autoHide false
 basla
 DISPLAY="$DISPLAY" xdotool mousemove 720 300
 sleep 0.6
