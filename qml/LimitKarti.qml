@@ -139,7 +139,7 @@ Item {
     }
     Rectangle {
         anchors.fill: parent
-        radius: 14
+        radius: yaricaplar.kart
         color: "#00000000"
         border.width: 1
         border.color: "#30ffffff"

@@ -245,8 +245,8 @@ class Dock(QWidget):
             self._taban_panel_genislik + 40, self._panel_yukseklik + 40, 6, 20, 20
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
-        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, 14)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, 14)
+        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, tema.KART_YARICAP)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, tema.KART_YARICAP)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -501,7 +501,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
+        goruntu = self._cam(parca, 18, 102, tema.KART_YARICAP, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._kart_hash:
             return
@@ -560,7 +560,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
+        goruntu = self._cam(parca, 18, 102, tema.KART_YARICAP, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._muzik_hash:
             return

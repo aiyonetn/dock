@@ -1,4 +1,5 @@
 import QtQuick
+import Qt5Compat.GraphicalEffects
 
 Item {
     id: kart
@@ -39,7 +40,7 @@ Item {
     }
     Rectangle {
         anchors.fill: parent
-        radius: 14
+        radius: yaricaplar.kart
         color: "#00000000"
         border.width: 1
         border.color: "#30ffffff"
@@ -60,13 +61,32 @@ Item {
 
     MouseArea { anchors.fill: parent }
 
-    Image {
+    Item {
+        id: kartKapakKutu
         x: 18; y: 16
         width: 88; height: 88
-        source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
-        fillMode: Image.PreserveAspectCrop
-        smooth: true
-        asynchronous: true
+        Image {
+            id: kartKapakKaynak
+            anchors.fill: parent
+            source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
+            fillMode: Image.PreserveAspectCrop
+            smooth: true
+            asynchronous: true
+            visible: false
+        }
+        Rectangle {
+            id: kartKapakMaske
+            anchors.fill: parent
+            radius: yaricaplar.kartKapak
+            color: "white"
+            layer.enabled: true
+            visible: false
+        }
+        OpacityMask {
+            anchors.fill: parent
+            source: kartKapakKaynak
+            maskSource: kartKapakMaske
+        }
     }
 
     GolgeText {
