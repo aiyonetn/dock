@@ -287,10 +287,18 @@ Item {
     LimitKarti {
         id: kart
         z: 31
-        visible: kok.kartAcik
         readonly property real sonGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
+        readonly property real hedefY: panelKutu.y - height - 12
+        visible: kok.kartAcik || opacity > 0
+        opacity: kok.kartAcik ? 1 : 0
         x: Math.max(6, Math.min(kok.width - width - 6,
             satir.x + satir.width - sonGenislik / 2 - width / 2))
-        y: panelKutu.y - height - 12
+        y: hedefY + (kok.kartAcik ? 0 : 6)
+        Behavior on opacity {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+        Behavior on y {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
     }
 }

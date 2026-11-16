@@ -3,7 +3,17 @@ from __future__ import annotations
 
 import threading
 
-from PySide6.QtCore import QAbstractListModel, QByteArray, QModelIndex, QObject, QTimer, Qt, Signal, Slot
+from PySide6.QtCore import (
+    Property,
+    QAbstractListModel,
+    QByteArray,
+    QModelIndex,
+    QObject,
+    QTimer,
+    Qt,
+    Signal,
+    Slot,
+)
 
 from . import limitler
 
@@ -17,9 +27,17 @@ class LimitModel(QAbstractListModel):
     RolWeeklyYuzde = Qt.UserRole + 6
     RolWeeklyReset = Qt.UserRole + 7
 
+    veriDegisti = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self._veri = {"codex": limitler._bos(), "claude": limitler._bos()}
+
+    def _saglayici(self, ad: str) -> dict:
+        return self._veri.get(ad) or limitler._bos()
+
+    codex = Property("QVariantMap", lambda self: self._saglayici("codex"), notify=veriDegisti)
+    claude = Property("QVariantMap", lambda self: self._saglayici("claude"), notify=veriDegisti)
 
     def roleNames(self):
         return {
@@ -62,6 +80,7 @@ class LimitModel(QAbstractListModel):
     def guncelle(self, veri: dict) -> None:
         self._veri = veri or {}
         self.dataChanged.emit(self.index(0, 0), self.index(1, 0), list(self.roleNames().keys()))
+        self.veriDegisti.emit()
 
 
 class LimitYonetici(QObject):
