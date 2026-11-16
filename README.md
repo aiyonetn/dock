@@ -121,5 +121,6 @@ ve geri / oynat-duraklat / ileri düğmeleri.
 
 ### Kanıt klasörü
 
-- `kanit/` güncel kanıtlar; `kanit/arsiv/` eski görünüm kareleri (01–13)
+- `kanit/` güncel kanıtlar; eski görünüm kareleri **yerel** `kanit/arsiv/` altında durur
+  (`kanit/*.png` depoya girmiyor — yalnız demo videosu ve `olcum.txt` sürümleniyor)
 - README görselleri (`docs/ekran/`) 16 Kas akşamı, düzeltmelerden sonra yeniden çekildi
