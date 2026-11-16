@@ -7,7 +7,7 @@ from pathlib import Path
 
 VARSAYILAN = {
     "autoHide": False,
-    "iconSize": 68,
+    "iconSize": 76,
     "buyutme": 1.9,
     "kenarBosluk": 10,
     "sabitlenen": [],

@@ -10,12 +10,12 @@ Item {
     property string vurgu: "#8fb4ff"
 
     // Referans olculeri: ikon 56, panel 76, yan 12, ara 8, alt bosluk 10.
-    readonly property real ikonBoyut: ayar ? ayar.iconSize : 68
+    readonly property real ikonBoyut: ayar ? ayar.iconSize : 76
     readonly property real buyutmeCarpan: ayar ? ayar.buyutme : 1.9
     readonly property real bosluk: 10
-    readonly property real yanBosluk: 14
+    readonly property real yanBosluk: 16
     readonly property real icBosluk: Math.round((panelYukseklik - ikonBoyut) / 2)
-    readonly property real panelYukseklik: 92
+    readonly property real panelYukseklik: 100
     readonly property real altPay: 10
     readonly property real hucreYuksekligi: Math.round(ikonBoyut * buyutmeCarpan)
     readonly property real tabanGenislik: ikonSayisi > 0

@@ -35,8 +35,8 @@ from .uygulamalar import (
 KOK = Path(__file__).resolve().parent.parent
 
 _ALAN_BOSLUK = 10
-_YAN_BOSLUK = 14
-_PANEL_YUKSEKLIK = 92
+_YAN_BOSLUK = 16
+_PANEL_YUKSEKLIK = 100
 _PANEL_DIKEY_BOSLUK = 12
 _ALT_PAY = 12
 # Pencere opak: buyuyen ikonlar icin panel ustunde pay, golge icin altta 10 px.

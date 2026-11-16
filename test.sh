@@ -16,7 +16,7 @@ from pathlib import Path
 p = Path.home() / ".config" / "dock" / "ayar.json"
 p.parent.mkdir(parents=True, exist_ok=True)
 veri = json.loads(p.read_text()) if p.is_file() else {
-    "autoHide": False, "iconSize": 68, "buyutme": 1.9, "kenarBosluk": 12, "sabitlenen": []}
+    "autoHide": False, "iconSize": 76, "buyutme": 1.9, "kenarBosluk": 12, "sabitlenen": []}
 veri[sys.argv[1]] = json.loads(sys.argv[2])
 p.write_text(json.dumps(veri, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 PY
@@ -42,7 +42,7 @@ basla() {
 
 cfg sabitlenen '[]'
 cfg kenarBosluk 12
-cfg iconSize 68
+cfg iconSize 76
 cfg autoHide false
 # 3. ikonun ekran koordinati (varsayilan ayarlarla hesaplanir).
 read -r IX IY < <("$PY" - <<'PY'
@@ -55,7 +55,7 @@ ayar = {**VARSAYILAN, **json.loads(p.read_text())}
 u = tara()
 h = onerilen_uygulamalar(u)
 sec = secilenler(h, ayar["sabitlenen"])
-ikon = int(ayar["iconSize"]); bosluk = 10; yan = 14
+ikon = int(ayar["iconSize"]); bosluk = 10; yan = 16
 panel = ikon * len(sec) + bosluk * max(0, len(sec) - 1) + 2 * yan
 sol = (1440 - panel) // 2
 x = sol + yan + 2 * (ikon + bosluk) + ikon // 2
