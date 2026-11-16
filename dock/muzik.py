@@ -1,7 +1,12 @@
 """Simdi caliyor: MPRIS (QtDBus) veya demo oynatici."""
 from __future__ import annotations
 
+import base64
 import hashlib
+import re
+import subprocess
+import json
+import threading
 from pathlib import Path
 import os
 from urllib.request import urlopen
@@ -18,6 +23,7 @@ _DEMO_SURE = 228_000
 
 class MuzikModel(QObject):
     degisti = Signal()
+    kapakHazir = Signal(str, str, str)
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -33,6 +39,10 @@ class MuzikModel(QObject):
         self._iface: QDBusInterface | None = None
         self._servis = ""
         self._track = ""
+        self._kapak_key = None
+        self._islem_sayaci = 0
+        self._kapak_bekliyor = False
+        self.kapakHazir.connect(self._kapak_sonuc)
         self._deneme = 0
         self._ui_sayac = 0
         self._ui_aktif = False
@@ -100,38 +110,100 @@ class MuzikModel(QObject):
             int(r / n * 0.42), int(g / n * 0.42), int(b / n * 0.42)
         )
 
-    def _kapak_hazirla(self, url: str) -> str:
+    def _kapak_isle(self, url: str) -> tuple[str, str] | None:
+        """Kapagi indir/coz, 176 px yuvarlak JPEG + renk JSON onbellege yaz."""
+        self._islem_sayaci += 1
+        if os.environ.get("DOCK_KAPAK_LOG"):
+            print(f"kapak-islem {self._islem_sayaci} {url[:80]}", flush=True)
         if not url:
-            return self._demo_kapak()
-        if url.startswith("file://"):
-            url = url[7:]
-        if url.startswith("http://") or url.startswith("https://"):
-            ad = hashlib.sha1(url.encode()).hexdigest()[:16]
-            hedef = self._kapak_dizini() / f"{ad}.png"
-            if hedef.is_file():
-                return str(hedef)
+            return None
+        ad = hashlib.sha1(url.encode()).hexdigest()
+        hedef = self._kapak_dizini() / f"{ad}.jpg"
+        renk_yolu = self._kapak_dizini() / f"{ad}.json"
+        if hedef.is_file() and renk_yolu.is_file():
             try:
-                veri = urlopen(url, timeout=8).read()
-                gecici = hedef.with_suffix(".tmp")
-                gecici.write_bytes(veri)
-                resim = QImage(str(gecici))
-                gecici.unlink(missing_ok=True)
+                return str(hedef), json.loads(renk_yolu.read_text())["renk"]
+            except (OSError, ValueError, KeyError):
+                pass
+        resim = QImage()
+        if url.startswith("data:"):
+            try:
+                ham = base64.b64decode(url.split(",", 1)[1])
+                resim = QImage.fromData(ham)
+            except Exception as hata:
+                print("kapak data hatasi:", hata, flush=True)
+        elif url.startswith("http://") or url.startswith("https://"):
+            try:
+                veri = urlopen(url, timeout=5).read()
+                resim = QImage.fromData(veri)
             except Exception as hata:
                 print("kapak indirilemedi:", hata, flush=True)
-                return self._demo_kapak()
         else:
-            resim = QImage(url)
-            if resim.isNull():
-                return self._demo_kapak()
-            hedef = self._kapak_dizini() / (hashlib.sha1(url.encode()).hexdigest()[:16] + ".png")
+            yol = url[7:] if url.startswith("file://") else url
+            resim = QImage(yol)
         if resim.isNull():
-            return self._demo_kapak()
+            print("kapak cozulemedi:", url[:80], flush=True)
+            return None
         taraf = min(resim.width(), resim.height())
         resim = resim.copy(
             (resim.width() - taraf) // 2, (resim.height() - taraf) // 2, taraf, taraf
         ).scaled(176, 176, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-        self._yuvarlat(resim, 24).save(str(hedef))
-        return str(hedef)
+        resim = self._yuvarlat(resim, 24)
+        resim.save(str(hedef), "JPEG", 88)
+        renk = self._renk_hesapla(str(hedef))
+        renk_yolu.write_text(json.dumps({"renk": renk}))
+        return str(hedef), renk
+
+    def _kapak_uygula(self, yol: str, renk: str) -> None:
+        if yol != self._kapak or renk != self._renk:
+            self._kapak = yol
+            self._renk = renk
+            self.degisti.emit()
+
+    @Slot(str, str, str)
+    def _kapak_sonuc(self, anahtar: str, yol: str, renk: str) -> None:
+        if anahtar == str(self._kapak_key):
+            self._kapak_uygula(yol, renk)
+
+    def _kapak_baslat(self, url: str) -> None:
+        if not url:
+            self._kapak_uygula(self._demo_kapak(), self._renk_hesapla(self._demo_kapak()))
+            return
+        ad = hashlib.sha1(url.encode()).hexdigest()
+        hedef = self._kapak_dizini() / f"{ad}.jpg"
+        if hedef.is_file():
+            try:
+                renk = json.loads((self._kapak_dizini() / f"{ad}.json").read_text())["renk"]
+                self._kapak_uygula(str(hedef), renk)
+                return
+            except (OSError, ValueError, KeyError):
+                pass
+        if not (url.startswith("http://") or url.startswith("https://")):
+            sonuc = self._kapak_isle(url)
+            if sonuc:
+                self._kapak_uygula(*sonuc)
+            else:
+                self._kapak_uygula(self._demo_kapak(), self._renk_hesapla(self._demo_kapak()))
+            return
+        if self._kapak_bekliyor:
+            return
+        self._kapak_bekliyor = True
+        anahtar = str(self._kapak_key)
+
+        def islet():
+            try:
+                sonuc = self._kapak_isle(url)
+            except Exception as hata:
+                print("kapak isleme hatasi:", hata, flush=True)
+                sonuc = None
+            self._kapak_bekliyor = False
+            if sonuc:
+                self.kapakHazir.emit(anahtar, sonuc[0], sonuc[1])
+
+        threading.Thread(target=islet, daemon=True).start()
+
+    def _kapak_hesapla_ve_uygula(self, url: str) -> None:
+        self._kapak_baslat(url)
 
     # --- ozellikler --------------------------------------------------------
     def _oku(self, ad: str):
@@ -146,6 +218,7 @@ class MuzikModel(QObject):
     sanatci = Property(str, lambda s: s._sanatci, notify=degisti)
     album = Property(str, lambda s: s._album, notify=degisti)
     kapak = Property(str, lambda s: s._kapak, notify=degisti)
+    islemSayaci = Property(int, lambda s: s._islem_sayaci, notify=degisti)
     renk = Property(str, lambda s: s._renk, notify=degisti)
     sureMs = Property(int, lambda s: s._sure, notify=degisti)
     konumMs = Property(int, lambda s: s._konum, notify=degisti)
@@ -200,26 +273,72 @@ class MuzikModel(QObject):
         elif not self._servis:
             self._mpris_ara()
 
+    def _gdbus_meta(self) -> dict:
+        """PySide a{sv} cozemediginde gdbus ile Metadata oku (yedek)."""
+        try:
+            cikti = subprocess.run(
+                [
+                    "gdbus", "call", "--session", "--dest", self._servis,
+                    "--object-path", "/org/mpris/MediaPlayer2",
+                    "--method", "org.freedesktop.DBus.Properties.Get",
+                    "org.mpris.MediaPlayer2.Player", "Metadata",
+                ],
+                capture_output=True, text=True, timeout=3,
+            ).stdout
+        except (OSError, subprocess.SubprocessError):
+            return {}
+
+        def metin(anahtar: str) -> str:
+            eslesme = re.search(r"'" + anahtar + r"': <'([^']*)'>", cikti)
+            if eslesme:
+                return eslesme.group(1)
+            liste = re.search(r"'" + anahtar + r"': <\[([^\]]*)\]>", cikti)
+            if liste:
+                return ", ".join(re.findall(r"'([^']*)'", liste.group(1)))
+            return ""
+
+        sure = re.search(r"'mpris:length': <int64 (\d+)>", cikti)
+        iz = re.search(r"'mpris:trackid': <objectpath '([^']+)'>", cikti)
+        return {
+            "xesam:title": metin("xesam:title"),
+            "xesam:artist": metin("xesam:artist"),
+            "xesam:album": metin("xesam:album"),
+            "mpris:artUrl": metin("mpris:artUrl"),
+            "mpris:length": int(sure.group(1)) if sure else 0,
+            "mpris:trackid": iz.group(1) if iz else "",
+        }
+
     def _mpris_oku(self) -> None:
         if self._iface is None:
             return
         try:
-            meta = self._iface.property("Metadata") or {}
+            ham = self._iface.property("Metadata")
+            meta = ham if isinstance(ham, dict) else None
             durum = str(self._iface.property("PlaybackStatus") or "Paused")
             konum = int(self._iface.property("Position") or 0)
         except Exception:
             self._iface = None
             self._demo = True
             return
+        if not meta:
+            meta = self._gdbus_meta()
         sanatci = meta.get("xesam:artist") or ""
         if isinstance(sanatci, (list, tuple)):
             sanatci = ", ".join(str(s) for s in sanatci)
         self._baslik = str(meta.get("xesam:title") or "")
         self._sanatci = str(sanatci)
         self._album = str(meta.get("xesam:album") or "")
-        self._kapak = self._kapak_hazirla(str(meta.get("mpris:artUrl") or ""))
-        self._renk = self._renk_hesapla(self._kapak)
-        self._track = meta.get("mpris:trackid") or ""
+        art = str(meta.get("mpris:artUrl") or "")
+        sahte = os.environ.get("DOCK_SAHTE_ARTURL")
+        if sahte:
+            ikinci = os.environ.get("DOCK_SAHTE_ARTURL_2")
+            art = ikinci if (ikinci and "Turuncu" in str(meta.get("xesam:title") or "")) else sahte
+        track = str(meta.get("mpris:trackid") or "")
+        anahtar = (track, art)
+        if anahtar != self._kapak_key:
+            self._kapak_key = anahtar
+            self._kapak_baslat(art)
+        self._track = track
         self._sure = int(int(meta.get("mpris:length") or 0) / 1000)
         self._konum = int(konum / 1000)
         self._caliyor = durum == "Playing"
