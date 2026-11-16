@@ -226,8 +226,8 @@ class Dock(QWidget):
         baglam.setContextProperty("limitModel", self.limit_model)
         baglam.setContextProperty("muzikModel", self.muzik_model)
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
-        baglam.setContextProperty("pencereSol", self._x)
-        baglam.setContextProperty("ekranGenislik", self._ekran.width())
+        baglam.setContextProperty("_pencereSol", self._x)
+        baglam.setContextProperty("_ekranGenislik", self._ekran.width())
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
         )
@@ -237,7 +237,7 @@ class Dock(QWidget):
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, 14)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 214, 7, 10, 14)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, 14)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -391,14 +391,10 @@ class Dock(QWidget):
             (self._panel_x, self._panel_y, self._taban_panel_genislik, self._panel_yukseklik)
         ]
         kok = self.gorunum.rootObject()
-        for anahtar, rect in (
-            ("kartAcik", self._kart_rect),
-            ("muzikAcik", self._muzik_rect),
+        if kok is not None and (
+            bool(kok.property("kartAcik")) or bool(kok.property("muzikAcik"))
         ):
-            if rect is None or kok is None or not bool(kok.property(anahtar)):
-                continue
-            x, y, gen, yuk = rect
-            bolgeler.append((x, y, gen, yuk))
+            bolgeler.append((0, 0, self._gen, self._panel_y))
         try:
             x11.giris_maskesi(int(self.winId()), bolgeler)
         except Exception:
@@ -448,7 +444,7 @@ class Dock(QWidget):
 
     # --- arka plan ---------------------------------------------------------
     @staticmethod
-    def _cam(resim: QImage, kat: int, alfa: int, yaricap: int) -> QImage:
+    def _cam(resim: QImage, kat: int, alfa: int, yaricap: int, renk=None) -> QImage:
         """Ucuz blur + koyu ton + yuvarlatilmis kose (tek sefer)."""
         kucuk = resim.scaled(
             max(1, resim.width() // kat),
@@ -458,7 +454,14 @@ class Dock(QWidget):
         )
         bulanik = kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
         boya = QPainter(bulanik)
-        boya.fillRect(bulanik.rect(), QColor(10, 10, 10, alfa))
+        ton = QColor(10, 10, 10)
+        if renk is not None and renk.isValid():
+            ton = QColor(
+                int(10 * 0.75 + renk.red() * 0.25),
+                int(10 * 0.75 + renk.green() * 0.25),
+                int(10 * 0.75 + renk.blue() * 0.25),
+            )
+        boya.fillRect(bulanik.rect(), QColor(ton.red(), ton.green(), ton.blue(), alfa))
         boya.end()
         return Dock._koseleri_yuvarlat(bulanik, yaricap)
 
@@ -477,7 +480,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14)
+        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._kart_hash:
             return
@@ -536,7 +539,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14)
+        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._muzik_hash:
             return

@@ -36,8 +36,8 @@ Item {
     property string muzikKaynak: ""
     property real aiMerkezX: 0
     property Item muzikHucre: null
-    property real pencereSol: 0
-    property real ekranGenislik: 1440
+    property real pencereSol: _pencereSol
+    property real ekranGenislik: _ekranGenislik
 
     // Imlece en yakin ikon; yalnizca o buyur (komsu gaussian yok).
     readonly property int yakinIkon: {

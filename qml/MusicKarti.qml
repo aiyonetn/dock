@@ -1,15 +1,14 @@
 import QtQuick
-import QtQuick.Effects
 
 Item {
     id: kart
     width: 320
-    height: 194
+    height: 210
 
     property string kartKaynak: ""
     readonly property color ana: "#F7F7F8"
-    readonly property color ikincil: "#A1A1A6"
-    readonly property color ucuncul: "#74747A"
+    readonly property color ikincil: "#9A9AA0"
+    readonly property color ucuncul: "#8E8E93"
     readonly property color ayirici: "#262628"
     readonly property color ray: "#2C2C2E"
 
@@ -27,14 +26,10 @@ Item {
 
     Image {
         source: "image://arkaplan/muzikGolge"
-        x: -10
-        y: -10
-        width: parent.width + 20
-        height: parent.height + 20
-        fillMode: Image.Stretch
-        smooth: true
+        x: -10; y: -10
+        width: parent.width + 20; height: parent.height + 20
+        fillMode: Image.Stretch; smooth: true
     }
-
     Image {
         anchors.fill: parent
         source: kart.kartKaynak
@@ -42,7 +37,6 @@ Item {
         cache: true
         smooth: true
     }
-
     Rectangle {
         anchors.fill: parent
         radius: 14
@@ -50,7 +44,6 @@ Item {
         border.width: 1
         border.color: "#30ffffff"
     }
-
     Rectangle {
         anchors.top: parent.top
         anchors.topMargin: 1
@@ -65,175 +58,110 @@ Item {
         }
     }
 
-    // Bos alan tiklamalarini yut (dugmeler ustte kalir).
     MouseArea { anchors.fill: parent }
 
-    // --- Kapak -------------------------------------------------------------
-    Item {
-        id: kapakKutu
-        x: 18
-        y: 18
-        width: 56
-        height: 56
-    }
-
-    Rectangle {
-        visible: muzikModel.kapak === ""
-        anchors.fill: kapakKutu
-        radius: 8
-        color: "#1C1C1E"
-    }
-
-    Canvas {
-        visible: muzikModel.kapak === ""
-        anchors.fill: kapakKutu
-        onPaint: {
-            var c = getContext("2d")
-            c.reset()
-            c.strokeStyle = "#A1A1A6"
-            c.fillStyle = "#A1A1A6"
-            c.lineWidth = 2.5
-            c.beginPath()
-            c.ellipse(18, 35, 6, 5, 0, 0, Math.PI * 2)
-            c.fill()
-            c.beginPath()
-            c.moveTo(23.5, 37)
-            c.lineTo(23.5, 17)
-            c.quadraticCurveTo(35, 18, 37, 27)
-            c.lineTo(37, 23)
-            c.stroke()
-        }
-    }
-
     Image {
-        id: kapakResim
-        visible: false
-        source: muzikModel.kapak
+        x: 18; y: 16
+        width: 88; height: 88
+        source: muzikModel.kapak !== "" ? "file://" + muzikModel.kapak : ""
         fillMode: Image.PreserveAspectCrop
+        smooth: true
         asynchronous: true
-        sourceSize.width: 112
-        sourceSize.height: 112
     }
 
-    Rectangle {
-        id: kapakMaske
-        anchors.fill: kapakKutu
-        radius: 8
-        color: "black"
-        layer.enabled: true
-        visible: false
-    }
-
-    MultiEffect {
-        anchors.fill: kapakKutu
-        visible: muzikModel.kapak !== ""
-        source: kapakResim
-        maskEnabled: true
-        maskSource: kapakMaske
-    }
-
-    // --- Baslik ------------------------------------------------------------
     GolgeText {
-        x: 86
-        y: 18
-        width: 216
+        x: 118; y: 16; width: 184
         text: muzikModel.baslik
         color: kart.ana
         font.pixelSize: 13
-        font.weight: Font.DemiBold
+        font.weight: Font.Medium
         elide: Text.ElideRight
     }
-    GolgeText {
-        x: 86
-        y: 36
-        width: 216
+    Text {
+        x: 118; y: 38; width: 184
         text: muzikModel.sanatci + (muzikModel.album ? " · " + muzikModel.album : "")
-        color: "#9A9AA0"
+        color: kart.ikincil
         font.pixelSize: 11
         elide: Text.ElideRight
     }
 
-    Rectangle {
-        x: 18
-        y: 82
-        width: parent.width - 36
-        height: 1
-        color: kart.ayirici
-    }
+    Rectangle { x: 18; y: 112; width: parent.width - 36; height: 1; color: kart.ayirici }
 
-    // --- Ilerleme ----------------------------------------------------------
-    Rectangle {
-        x: 18
-        y: 91
+    Item {
+        id: cubukAlan
+        x: 18; y: 118
         width: parent.width - 36
-        height: 4
-        radius: 2
-        color: kart.ray
+        height: 12
         Rectangle {
-            width: muzikModel.sureMs > 0
-                ? parent.width * Math.min(1, muzikModel.konumMs / muzikModel.sureMs) : 0
-            height: parent.height
-            Behavior on width { NumberAnimation { duration: 700; easing.type: Easing.OutQuad } }
-            radius: 2
-            color: kart.ana
+            id: ray
+            anchors.verticalCenter: parent.verticalCenter
+            width: parent.width
+            height: cubukFare.containsMouse ? 6 : 4
+            radius: height / 2
+            color: kart.ray
+            Behavior on height { NumberAnimation { duration: 120 } }
+            Rectangle {
+                width: muzikModel.sureMs > 0
+                    ? parent.width * Math.min(1, muzikModel.konumMs / muzikModel.sureMs) : 0
+                height: parent.height
+                radius: parent.radius
+                color: kart.ana
+                Behavior on width { NumberAnimation { duration: 700; easing.type: Easing.OutQuad } }
+            }
+        }
+        MouseArea {
+            id: cubukFare
+            anchors.fill: parent
+            hoverEnabled: true
+            cursorShape: Qt.PointingHandCursor
+            onClicked: function(mouse) { muzikModel.ara(mouse.x / width) }
         }
     }
 
-    GolgeText {
-        x: 18
-        y: 99
+    Text {
+        x: 18; y: 132
         text: kart.sure(muzikModel.konumMs)
-        color: "#9A9AA0"
-        font.pixelSize: 10
+        color: kart.ikincil
+        font.pixelSize: 11
+        font.family: "Geist Mono"
     }
-    GolgeText {
+    Text {
         anchors.right: parent.right
         anchors.rightMargin: 18
-        y: 99
+        y: 132
         text: kart.sure(muzikModel.sureMs)
-        color: "#9A9AA0"
-        font.pixelSize: 10
+        color: kart.ikincil
+        font.pixelSize: 11
+        font.family: "Geist Mono"
     }
 
-    // --- Dugmeler ----------------------------------------------------------
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 123
+        y: 150
         spacing: 24
 
         Item {
-            width: 28
-            height: 28
-            Rectangle {
-                anchors.fill: parent
-                radius: 14
-                color: geriFare.containsMouse ? "#1C1C1E" : "transparent"
-            }
+            width: 32; height: 32
+            Rectangle { anchors.fill: parent; radius: 16; color: geriFare.containsMouse ? "#1C1C1E" : "transparent" }
             Canvas {
                 anchors.fill: parent
                 onPaint: {
-                    var c = getContext("2d")
-                    c.reset()
-                    c.fillStyle = "#F7F7F8"
-                    c.beginPath(); c.moveTo(6, 14); c.lineTo(14, 6); c.lineTo(14, 22); c.fill()
-                    c.beginPath(); c.moveTo(14, 14); c.lineTo(22, 6); c.lineTo(22, 22); c.fill()
+                    var c = getContext("2d"); c.reset(); c.fillStyle = "#F7F7F8"
+                    c.beginPath(); c.moveTo(7,16); c.lineTo(17,7); c.lineTo(17,25); c.fill()
+                    c.beginPath(); c.moveTo(17,16); c.lineTo(27,7); c.lineTo(27,25); c.fill()
                 }
             }
             MouseArea {
-                id: geriFare
-                anchors.fill: parent
-                hoverEnabled: true
+                id: geriFare; anchors.fill: parent; hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: muzikModel.geri()
             }
         }
 
         Item {
-            width: 28
-            height: 28
+            width: 36; height: 36
             Rectangle {
-                anchors.fill: parent
-                radius: 14
+                anchors.fill: parent; radius: 18
                 color: oynatFare.containsMouse ? "#E4E4E8" : kart.ana
             }
             Canvas {
@@ -242,60 +170,45 @@ Item {
                 property bool caliyor: muzikModel.caliyor
                 onCaliyorChanged: requestPaint()
                 onPaint: {
-                    var c = getContext("2d")
-                    c.reset()
-                    c.fillStyle = "#0A0A0A"
+                    var c = getContext("2d"); c.reset(); c.fillStyle = "#0A0A0A"
                     if (oynatCanvas.caliyor) {
-                        c.fillRect(9, 7, 4, 14)
-                        c.fillRect(15, 7, 4, 14)
+                        c.fillRect(12, 10, 5, 16)
+                        c.fillRect(20, 10, 5, 16)
                     } else {
-                        c.beginPath(); c.moveTo(8, 6); c.lineTo(19, 14); c.lineTo(8, 22); c.fill()
+                        c.beginPath(); c.moveTo(12, 9); c.lineTo(25, 18); c.lineTo(12, 27); c.fill()
                     }
                 }
             }
             MouseArea {
-                id: oynatFare
-                anchors.fill: parent
-                hoverEnabled: true
+                id: oynatFare; anchors.fill: parent; hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: muzikModel.oynatDuraklat()
             }
         }
 
         Item {
-            width: 28
-            height: 28
-            Rectangle {
-                anchors.fill: parent
-                radius: 14
-                color: ileriFare.containsMouse ? "#1C1C1E" : "transparent"
-            }
+            width: 32; height: 32
+            Rectangle { anchors.fill: parent; radius: 16; color: ileriFare.containsMouse ? "#1C1C1E" : "transparent" }
             Canvas {
                 anchors.fill: parent
                 onPaint: {
-                    var c = getContext("2d")
-                    c.reset()
-                    c.fillStyle = "#F7F7F8"
-                    c.beginPath(); c.moveTo(22, 14); c.lineTo(14, 6); c.lineTo(14, 22); c.fill()
-                    c.beginPath(); c.moveTo(14, 14); c.lineTo(6, 6); c.lineTo(6, 22); c.fill()
+                    var c = getContext("2d"); c.reset(); c.fillStyle = "#F7F7F8"
+                    c.beginPath(); c.moveTo(27,16); c.lineTo(17,7); c.lineTo(17,25); c.fill()
+                    c.beginPath(); c.moveTo(17,16); c.lineTo(7,7); c.lineTo(7,25); c.fill()
                 }
             }
             MouseArea {
-                id: ileriFare
-                anchors.fill: parent
-                hoverEnabled: true
+                id: ileriFare; anchors.fill: parent; hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
                 onClicked: muzikModel.ileri()
             }
         }
     }
 
-    GolgeText {
-        x: 18
-        y: 163
+    Text {
+        x: 18; y: 192
         text: muzikModel.demo ? "demo · oynatıcı yok" : "MPRIS"
-        color: "#8E8E93"
+        color: kart.ucuncul
         font.pixelSize: 11
     }
-
 }

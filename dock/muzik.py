@@ -24,12 +24,14 @@ class MuzikModel(QObject):
         self._sanatci = _DEMO_SANATCI
         self._album = "Single"
         self._kapak = self._demo_kapak()
+        self._renk = self._renk_hesapla(self._kapak)
         self._sure = _DEMO_SURE
         self._konum = 72_000
         self._caliyor = True
         self._demo = True
         self._iface: QDBusInterface | None = None
         self._servis = ""
+        self._track = ""
         self._deneme = 0
         self._ui_sayac = 0
         self._ui_aktif = False
@@ -82,6 +84,21 @@ class MuzikModel(QObject):
         self._yuvarlat(resim, 24).save(str(hedef))
         return str(hedef)
 
+    def _renk_hesapla(self, yol: str) -> str:
+        resim = QImage(yol)
+        if resim.isNull():
+            return "#0A0A0A"
+        r = g = b = n = 0
+        for y in range(0, resim.height(), 8):
+            for x in range(0, resim.width(), 8):
+                renk = resim.pixelColor(x, y)
+                r += renk.red(); g += renk.green(); b += renk.blue(); n += 1
+        if n == 0:
+            return "#0A0A0A"
+        return "#%02x%02x%02x" % (
+            int(r / n * 0.42), int(g / n * 0.42), int(b / n * 0.42)
+        )
+
     def _kapak_hazirla(self, url: str) -> str:
         if not url:
             return self._demo_kapak()
@@ -128,6 +145,7 @@ class MuzikModel(QObject):
     sanatci = Property(str, lambda s: s._sanatci, notify=degisti)
     album = Property(str, lambda s: s._album, notify=degisti)
     kapak = Property(str, lambda s: s._kapak, notify=degisti)
+    renk = Property(str, lambda s: s._renk, notify=degisti)
     sureMs = Property(int, lambda s: s._sure, notify=degisti)
     konumMs = Property(int, lambda s: s._konum, notify=degisti)
     caliyor = Property(bool, lambda s: s._caliyor, notify=degisti)
@@ -173,6 +191,7 @@ class MuzikModel(QObject):
             self._sanatci = _DEMO_SANATCI
             self._album = "Demo"
             self._kapak = self._demo_kapak()
+            self._renk = self._renk_hesapla(self._kapak)
             self._sure = _DEMO_SURE
             self._konum = 0
             self._caliyor = True
@@ -198,6 +217,8 @@ class MuzikModel(QObject):
         self._sanatci = str(sanatci)
         self._album = str(meta.get("xesam:album") or "")
         self._kapak = self._kapak_hazirla(str(meta.get("mpris:artUrl") or ""))
+        self._renk = self._renk_hesapla(self._kapak)
+        self._track = meta.get("mpris:trackid") or ""
         self._sure = int(int(meta.get("mpris:length") or 0) / 1000)
         self._konum = int(konum / 1000)
         self._caliyor = durum == "Playing"
@@ -237,6 +258,20 @@ class MuzikModel(QObject):
             self.degisti.emit()
 
     # --- dugmeler ----------------------------------------------------------
+    @Slot(float)
+    def ara(self, oran: float) -> None:
+        oran = max(0.0, min(1.0, oran))
+        if self._demo:
+            self._konum = int(self._sure * oran)
+            self.degisti.emit()
+            return
+        if self._iface is not None:
+            try:
+                self._iface.call("SetPosition", self._track, int(self._sure * oran * 1000))
+            except Exception:
+                pass
+            self._mpris_oku()
+
     @Slot()
     def oynat_duraklat(self) -> None:
         if self._demo:
