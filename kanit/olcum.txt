@@ -1,0 +1,12 @@
+pid=507500
+    PID %CPU   RSS     ELAPSED CMD
+ 507500  3.0 187284      01:03 /home/claudecodexsever/omp-isler/dock-dock-mvp/.venv/bin/python main.py
+
+muzik karti acik, 30 sn (demo): CPU %2.23
+
+muzik karti acik, 20 sn: CPU %2.3
+muzik karti kapali, 20 sn: CPU %2.25
+
+seffaf: AI karti acik, 30 sn: CPU %1.2
+seffaf: muzik karti acik, 20 sn: CPU %2.2
+seffaf: kartlar kapali, 20 sn: CPU %0.35
