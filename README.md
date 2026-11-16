@@ -118,3 +118,8 @@ ve geri / oynat-duraklat / ileri düğmeleri.
 - Gerçek saydamlık (picom) denendi: sistemde `picom`/`compton` yok, `sudo`
   olmadan kurulum yapılamıyor; AppImage indirilemedi. Bu nedenle kompozit cam
   tekniği korunuyor.
+
+### Kanıt klasörü
+
+- `kanit/` güncel kanıtlar; `kanit/arsiv/` eski görünüm kareleri (01–13)
+- README görselleri (`docs/ekran/`) 16 Kas akşamı, düzeltmelerden sonra yeniden çekildi
