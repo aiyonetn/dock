@@ -1,5 +1,4 @@
 import QtQuick
-import QtQuick.Effects
 
 Item {
     id: kok
@@ -66,18 +65,17 @@ Item {
         smooth: true
     }
 
-    // Panel ustundeki yumusak golge (8 px asagi).
-    Rectangle {
-        x: panelKutu.x + 6
-        y: panelKutu.y + 8
-        width: panelKutu.width - 12
-        height: panelKutu.height
-        radius: 20
-        color: "#66000000"
-        layer.enabled: true
-        layer.effect: MultiEffect {
-            blurEnabled: false
-        }
+    // Panel golgesi: Python tarafinda bir kez uretilir. Onceden burada
+    // layer + MultiEffect vardi; yazilim render'da her karede ek gecis
+    // maliyeti cikariyordu. Artik tek dokulu dikdortgen.
+    Image {
+        source: golgeUrl
+        x: panelKutu.x - 6
+        y: panelKutu.y + 2
+        width: panelKutu.width + 12
+        height: panelKutu.height + 20
+        fillMode: Image.Stretch
+        smooth: true
     }
 
     Item {
@@ -96,24 +94,6 @@ Item {
             source: kok.arkaplanPanel
             fillMode: Image.Stretch
             cache: false
-            visible: false
-        }
-
-        MultiEffect {
-            anchors.fill: parent
-            source: arkaPlan
-            blurEnabled: false
-            maskEnabled: true
-            maskSource: panelMaske
-        }
-
-        Rectangle {
-            id: panelMaske
-            anchors.fill: parent
-            radius: 20
-            color: "black"
-            layer.enabled: true
-            visible: false
         }
 
         // %80 opak koyu katman + ust isik gradyani.
@@ -204,7 +184,7 @@ Item {
                     sourceSize.height: 160
                     fillMode: Image.PreserveAspectFit
                     smooth: true
-                    mipmap: true
+                    mipmap: false
                     asynchronous: true
                 }
 

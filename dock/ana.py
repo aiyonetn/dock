@@ -16,7 +16,7 @@ from PySide6.QtCore import (
     Qt,
     Slot,
 )
-from PySide6.QtGui import QCursor, QImage
+from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath
 from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
@@ -160,17 +160,17 @@ class Dock(QWidget):
         baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
         )
+        # Golge gorseli: her karede blur yerine tek dokulu dikdortgen.
+        self.saglayici.goruntuler["golge"] = self._golge_uret(
+            self._taban_panel_genislik + 24, self._panel_yukseklik + 24
+        )
+        baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
             raise RuntimeError(f"QML yuklenemedi: {hatalar}")
 
     def _zamanlayicilari_kur(self) -> None:
-        self._arkaplan_zaman = QTimer(self)
-        self._arkaplan_zaman.setInterval(3000)
-        self._arkaplan_zaman.timeout.connect(self._arkaplan_yenile)
-        self._arkaplan_zaman.start()
-
         self._fare_zaman = QTimer(self)
         self._fare_zaman.setInterval(50)
         self._fare_zaman.timeout.connect(self._fare_denetle)
@@ -191,12 +191,11 @@ class Dock(QWidget):
             self.move(self._x, self._y_gizli)
             self.show()
             self._gorunur = False
-            self._arkaplan_yenile()
         else:
+            # Yakalama pencere gorunmeden once goster() icinde yapilir.
             self.move(self._x, self._y_gorunur)
-            self._arkaplan_yenile()
+            self.goster()
             self.show()
-            self._gorunur = True
 
     def _acik_pencereleri_tazele(self) -> None:
         """Acik uygulama gostergesi: simdilik yalniz Chrome (wmctrl)."""
@@ -232,9 +231,10 @@ class Dock(QWidget):
     def goster(self) -> None:
         if self._gorunur:
             return
+        # Pencere hala gizliyken yakala: kendi icerigimizi cekmeyiz.
+        self._arkaplan_yenile()
         self._gorunur = True
         self._son_icerde = time.monotonic()
-        self._arkaplan_yenile()
         self._kaydir(self._y_gorunur, 200)
 
     def gizle(self) -> None:
@@ -253,11 +253,48 @@ class Dock(QWidget):
             Qt.IgnoreAspectRatio,
             Qt.SmoothTransformation,
         )
-        return kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        bulanik = kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+        return Dock._koseleri_yuvarlat(bulanik, 20)
+
+    @staticmethod
+    def _koseleri_yuvarlat(resim: QImage, yaricap: int) -> QImage:
+        """Kose yuvarlatmayi goruntuye bir kez uygular.
+
+        QML'de her karede MultiEffect/mask calistirmak yazilim render'da
+        kare basina ~3-4 ms CPU yiyor; burada bir kez yapmak bedava.
+        """
+        resim = resim.convertToFormat(QImage.Format_RGBA8888)
+        boya = QPainter(resim)
+        boya.setRenderHint(QPainter.Antialiasing, True)
+        boya.setCompositionMode(QPainter.CompositionMode_DestinationIn)
+        yol = QPainterPath()
+        yol.addRoundedRect(0, 0, resim.width(), resim.height(), yaricap, yaricap)
+        boya.fillPath(yol, Qt.black)
+        boya.end()
+        return resim
+
+    @staticmethod
+    def _golge_uret(gen: int, yuk: int, kat: int = 6) -> QImage:
+        """Panel golgesini bir kez uretir (yuvarlat + ucuz blur).
+
+        Onceden QML'de golge bir layer + MultiEffect idi ve panel genisligi
+        her degistiginde yeniden isleniyordu.
+        """
+        resim = QImage(max(4, gen), max(4, yuk), QImage.Format_RGBA8888)
+        resim.fill(Qt.transparent)
+        boya = QPainter(resim)
+        boya.setRenderHint(QPainter.Antialiasing, True)
+        boya.setPen(Qt.NoPen)
+        boya.setBrush(QColor(0, 0, 0, 150))
+        boya.drawRoundedRect(0, 0, gen, yuk, 20, 20)
+        boya.end()
+        kucuk = resim.scaled(
+            max(2, gen // kat), max(2, yuk // kat), Qt.IgnoreAspectRatio, Qt.SmoothTransformation
+        )
+        return kucuk.scaled(gen, yuk, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
 
     def _arkaplan_yenile(self) -> None:
-        """Masaustunu yakalar. Pencere gorunurken kendi icerigini yakalamamak
-        icin erteleme yapilir; autoHide gizliyken tazelenir."""
+        """Masaustunu yakalar; yalnizca goster() cagirir (QTimer yok)."""
         if self._gorunur and self.geometry().intersects(
             QRect(self._x, self._y_gorunur, self._gen, self._yuk)
         ):
@@ -280,7 +317,9 @@ class Dock(QWidget):
                 self._panel_yukseklik,
             )
         )
-        self.saglayici.goruntuler = {"tam": tam, "panel": self._bulanik(panel)}
+        # "golge" anahtarini koru: sozlugu tumden degistirmek gorseli siler.
+        self.saglayici.goruntuler["tam"] = tam
+        self.saglayici.goruntuler["panel"] = self._bulanik(panel)
         self._sayac += 1
         kok.setProperty("arkaplanTam", f"image://arkaplan/tam?{self._sayac}")
         kok.setProperty("arkaplanPanel", f"image://arkaplan/panel?{self._sayac}")
