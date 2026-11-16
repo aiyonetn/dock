@@ -121,9 +121,35 @@ def _plaka_var(resim: QImage) -> bool:
     )
 
 
+def _doluluk(resim: QImage) -> float:
+    """Kirpilmis ikonun bbox icindeki dolu piksel orani."""
+    gen, yuk = resim.width(), resim.height()
+    if gen <= 0 or yuk <= 0:
+        return 1.0
+    veri = resim.constBits()
+    adim = resim.bytesPerLine()
+    dolu = 0
+    for y in range(yuk):
+        satir = veri[y * adim:y * adim + gen * 4]
+        dolu += sum(1 for a in satir[3::4] if a > _ALFA_ESIGI)
+    return dolu / (gen * yuk)
+
+
+def _optik_carpan(oran: float) -> float:
+    """Dusuk kaplamali (yuvarlak/ince) logoyu buyut, kare/iri olani kucult."""
+    if oran <= 0.55:
+        return 1.12
+    if oran <= 0.70:
+        return 1.12 - (oran - 0.55) / 0.15 * 0.04
+    if oran <= 0.76:
+        return 1.08 - (oran - 0.70) / 0.06 * 0.08
+    return 1.0 - min(0.04, (oran - 0.76) / 0.14 * 0.04)
+
+
 def _son_goruntu(kirpik: QImage) -> QImage:
-    """Kirpilmis ikonu 56 px kutuya (8 px bosluk) yerlestirir, golge ekler."""
-    olcek = min(_IC / max(1, kirpik.width()), _IC / max(1, kirpik.height()))
+    """Kirpilmis ikonu 56 px kutuya yerlestirir; optik agirligi esitler."""
+    icerik = _IC * _optik_carpan(_doluluk(kirpik))
+    olcek = min(icerik / max(1, kirpik.width()), icerik / max(1, kirpik.height()))
     yeni = kirpik.scaled(
         max(1, round(kirpik.width() * olcek)),
         max(1, round(kirpik.height() * olcek)),
@@ -170,7 +196,7 @@ def hazirla(kaynak: str) -> str:
         damga = f"{yol.stat().st_mtime_ns}:{yol.stat().st_size}"
     except OSError:
         return ""
-    anahtar = hashlib.sha1(f"{yol}:{damga}:5".encode()).hexdigest()[:20]
+    anahtar = hashlib.sha1(f"{yol}:{damga}:6".encode()).hexdigest()[:20]
     hedef = _onbellek_dizini() / f"{anahtar}.png"
     if hedef.is_file():
         return str(hedef)
