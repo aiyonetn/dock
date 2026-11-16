@@ -3,7 +3,7 @@ import QtQuick
 Item {
     id: kart
     width: 320
-    height: claudeVar ? 282 : 212
+    height: claudeVar ? 306 : 236
 
     property var codex: limitModel.codex
     property var claude: limitModel.claude
@@ -20,8 +20,8 @@ Item {
 
     component Halka: Item {
         id: halka
-        width: 72
-        height: 92
+        width: 92
+        height: 114
         property real yuzde: -1
         property string etiket: ""
         property real reset: 0
@@ -31,21 +31,29 @@ Item {
             if (p < 80) return "#F5C542"
             return "#F05B5B"
         }
-        function kalan(epoch) {
-            if (!epoch || epoch <= 0) return "—"
+        function kalanParcalar(epoch) {
+            if (!epoch || epoch <= 0) return [{metin: "—", mono: false}]
             var d = Math.floor(epoch - kart.simdi)
-            if (d <= 0) return "şimdi"
+            if (d <= 0) return [{metin: "şimdi", mono: false}]
             var gun = Math.floor(d / 86400)
             var sa = Math.floor((d % 86400) / 3600)
             var dk = Math.floor((d % 3600) / 60)
-            if (gun > 0) return gun + " gün" + (sa > 0 ? " " + sa + " sa" : "")
-            if (sa > 0) return sa + " sa" + (dk > 0 ? " " + dk + " dk" : "")
-            return Math.max(1, dk) + " dk"
+            var p = []
+            if (gun > 0) {
+                p.push({metin: gun, mono: true}, {metin: " gün", mono: false})
+                if (sa > 0) p.push({metin: " " + sa, mono: true}, {metin: " sa", mono: false})
+            } else if (sa > 0) {
+                p.push({metin: sa, mono: true}, {metin: " sa", mono: false})
+                if (dk > 0) p.push({metin: " " + dk, mono: true}, {metin: " dk", mono: false})
+            } else {
+                p.push({metin: Math.max(1, dk), mono: true}, {metin: " dk", mono: false})
+            }
+            return p
         }
 
         Canvas {
             id: halkaTuval
-            width: 64; height: 64
+            width: 84; height: 84
             property real yuzde: halka.yuzde
             onYuzdeChanged: requestPaint()
             Connections {
@@ -54,7 +62,7 @@ Item {
             }
             onPaint: {
                 var c = getContext("2d"); c.reset()
-                var m = 32, r = 28
+                var m = 42, r = 39
                 c.lineWidth = 6
                 c.strokeStyle = "#2C2C2E"
                 c.beginPath(); c.arc(m, m, r, 0, Math.PI * 2); c.stroke()
@@ -77,18 +85,28 @@ Item {
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 66
+            y: 86
             text: halka.etiket
             color: kart.ikincil
             font.pixelSize: 11
         }
         Text {
             anchors.horizontalCenter: parent.horizontalCenter
-            y: 78
-            text: halka.kalan(halka.reset)
-            color: kart.ucuncul
-            font.pixelSize: 10
-            font.family: "Geist Mono"
+            y: 98
+            height: 12
+            Row {
+                anchors.horizontalCenter: parent.horizontalCenter
+                spacing: 0
+                Repeater {
+                    model: halka.kalanParcalar(halka.reset)
+                    Text {
+                        text: modelData.metin
+                        color: kart.ucuncul
+                        font.pixelSize: 10
+                        font.family: modelData.mono ? "Geist Mono" : "Geist"
+                    }
+                }
+            }
         }
     }
 
@@ -164,8 +182,8 @@ Item {
 
     Row {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 54
-        spacing: 28
+        y: 50
+        spacing: 24
         Halka { etiket: "Oturum"; yuzde: kart.codexDeger("session"); reset: kart.codexReset("session") }
         Halka { etiket: "Hafta"; yuzde: kart.codexDeger("weekly"); reset: kart.codexReset("weekly") }
     }
@@ -183,8 +201,8 @@ Item {
     Row {
         visible: kart.claudeVar
         anchors.horizontalCenter: parent.horizontalCenter
-        y: 146
-        spacing: 28
+        y: 170
+        spacing: 24
         Halka {
             etiket: "Claude Oturum"
             yuzde: kart.claudeDeger("session")
@@ -199,7 +217,7 @@ Item {
 
     Text {
         anchors.horizontalCenter: parent.horizontalCenter
-        y: kart.claudeVar ? 246 : 176
+        y: kart.claudeVar ? 270 : 200
         text: !limitModel.veriVar ? "veri bekleniyor"
             : (limitModel.bayat ? "veri gelmedi" : kart.guncellemeMetni())
         color: kart.ucuncul

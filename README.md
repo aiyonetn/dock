@@ -125,3 +125,19 @@ Geist + Geist Mono (SIL OFL, `assets/fonts/`). Açılışta tüm TTF'ler
 `QFontDatabase.addApplicationFont` ile yüklenir; aile bulunamaz veya yükleme
 başarısız olursa uygulama hata basıp çıkar. Varsayılan `Geist 11`; yüzdeler,
 süreler, geri sayımlar ve halka içi değerler `Geist Mono` kullanır.
+
+## v13 kapak işleme ve ölçüler
+
+- Kapak/renk yalnız `mpris:trackid` veya `artUrl` değişince işlenir; aynı parçada
+  tekrar okuma **0 işlem** yapar (`DOCK_KAPAK_LOG` sayacı).
+- `http(s)` kapaklar arka planda indirilir (5 sn timeout), önceki kapak korunur;
+  önbellek `~/.cache/dock/kapak/<sha1>.jpg` + `.json` (baskın renk). `data:`/`file://`
+  doğrudan çözülür; başarısızlıkta demo kapağı ve log.
+- İkon 64 px, müzik ikonundaki kapak %80 (~51 px); AI halkaları 84 px/6 px;
+  kart alt kenarı panel üst kenarından 16 px. Panel pencere payı 120 px ile
+  ekran kenarına değmiyor.
+- Geist Mono yalnız rakam/geri sayım değerlerinde; birimler ve etiketler Geist.
+- `test_v13.sh`: gerçek mpv + MPRIS + http artUrl, track geçişi ve 50 ms timer
+  gecikmesini ölçer. Son ölçüm: max 66.9 ms, p95 61.9 ms (<100 ms).
+- Not: mpv-mpris 1.1 `artUrl`'i boş `data:image/jpeg;base64,` döndürdüğü için
+  gerçek mpv testi fallback yolunu sınar; uzak indirme yolu test env artUrl ile doğrulandı.

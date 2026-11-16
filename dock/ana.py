@@ -268,6 +268,18 @@ class Dock(QWidget):
         self._surec_zaman.start()
         self._acik_pencereleri_tazele()
 
+        if os.environ.get("DOCK_LATENCY_LOG"):
+            self._lat_son = time.monotonic()
+            self._lat_dosya = open(os.environ["DOCK_LATENCY_LOG"], "a", buffering=1)
+            self._lat_zaman = QTimer(self)
+            self._lat_zaman.setInterval(50)
+            def _lat():
+                simdi = time.monotonic()
+                self._lat_dosya.write(f"{(simdi - self._lat_son) * 1000:.1f}\n")
+                self._lat_son = simdi
+            self._lat_zaman.timeout.connect(_lat)
+            self._lat_zaman.start()
+
         self._animasyon = QPropertyAnimation(self, b"pos", self)
         self._animasyon.setEasingCurve(QEasingCurve.OutCubic)
 
@@ -457,9 +469,9 @@ class Dock(QWidget):
         ton = QColor(10, 10, 10)
         if renk is not None and renk.isValid():
             ton = QColor(
-                int(10 * 0.75 + renk.red() * 0.25),
-                int(10 * 0.75 + renk.green() * 0.25),
-                int(10 * 0.75 + renk.blue() * 0.25),
+                int(10 * 0.5 + renk.red() * 0.5),
+                int(10 * 0.5 + renk.green() * 0.5),
+                int(10 * 0.5 + renk.blue() * 0.5),
             )
         boya.fillRect(bulanik.rect(), QColor(ton.red(), ton.green(), ton.blue(), alfa))
         boya.end()
@@ -531,7 +543,7 @@ class Dock(QWidget):
     def _muzik_arkaplan_yenile(self) -> None:
         if self._tam is None or self._muzik_rect is None:
             return
-        anahtar = (self._tam_surum, self._muzik_rect)
+        anahtar = (self._tam_surum, self._muzik_rect, self.muzik_model.renk)
         if anahtar == self._muzik_anahtar:
             return
         self._muzik_anahtar = anahtar
