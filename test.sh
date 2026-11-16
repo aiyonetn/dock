@@ -55,7 +55,7 @@ ayar = {**VARSAYILAN, **json.loads(p.read_text())}
 u = tara()
 h = onerilen_uygulamalar(u)
 sec = secilenler(h, ayar["sabitlenen"])
-ikon = int(ayar["iconSize"]); bosluk = 10; yan = 16
+ikon = int(ayar["iconSize"]); bosluk = 12; yan = 16
 panel = ikon * len(sec) + bosluk * max(0, len(sec) - 1) + 2 * yan
 sol = (1440 - panel) // 2
 x = sol + yan + 2 * (ikon + bosluk) + ikon // 2

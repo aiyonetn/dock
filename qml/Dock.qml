@@ -12,15 +12,22 @@ Item {
     // Referans olculeri: ikon 56, panel 76, yan 12, ara 8, alt bosluk 10.
     readonly property real ikonBoyut: ayar ? ayar.iconSize : 76
     readonly property real buyutmeCarpan: ayar ? ayar.buyutme : 1.9
-    readonly property real bosluk: 10
+    readonly property real bosluk: 12
     readonly property real yanBosluk: 16
     readonly property real icBosluk: Math.round((panelYukseklik - ikonBoyut) / 2)
     readonly property real panelYukseklik: 100
-    readonly property real altPay: 10
+    readonly property real altPay: 12
     readonly property real hucreYuksekligi: Math.round(ikonBoyut * buyutmeCarpan)
     readonly property real tabanGenislik: ikonSayisi > 0
         ? ikonSayisi * ikonBoyut + (ikonSayisi - 1) * bosluk : 0
-    readonly property real panelGenislik: tabanGenislik + 2 * yanBosluk
+    // Buyuyen ikonlar komsularini iter; panel icerik kadar genisler.
+    readonly property real icerikGenislik: {
+        var toplam = 0
+        for (var i = 0; i < ikonSayisi; i++)
+            toplam += ikonBoyut * hedefOlcek(i)
+        return toplam + Math.max(0, ikonSayisi - 1) * bosluk
+    }
+    readonly property real panelGenislik: icerikGenislik + 2 * yanBosluk
     readonly property real sigma: 0.85
 
     property real fareX: -1
@@ -77,6 +84,8 @@ Item {
         height: kok.panelYukseklik
         x: Math.round((kok.width - width) / 2)
         y: kok.height - kok.altPay - height
+        Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+        Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
 
         // Arkasi bulanik masaustu (Python'da 12 kat kucult/buyut).
         Image {
@@ -140,21 +149,32 @@ Item {
     }
 
     // --- Ikonlar -----------------------------------------------------------
-    Row {
+    Item {
         id: satir
-        anchors.horizontalCenter: parent.horizontalCenter
+        width: kok.icerikGenislik
+        x: (kok.width - width) / 2
         y: panelKutu.y + panelKutu.height - kok.icBosluk - kok.hucreYuksekligi
-        spacing: kok.bosluk
         height: kok.hucreYuksekligi
+
+        Behavior on width { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
+        Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
 
         Repeater {
             model: ikonModel
             delegate: Item {
                 id: hucre
-                width: kok.ikonBoyut
+                // Konumlar birikimli genislikten: buyuyen ikon komsusunu iter.
+                x: {
+                    var konum = 0
+                    for (var j = 0; j < index; j++)
+                        konum += kok.ikonBoyut * kok.hedefOlcek(j) + kok.bosluk
+                    return konum
+                }
+                width: kok.ikonBoyut * hucre.olcekDeger
                 height: kok.hucreYuksekligi
                 z: 1 + Math.round(olcekDeger * 10)
 
+                Behavior on x { NumberAnimation { duration: 140; easing.type: Easing.OutQuad } }
                 property real olcekDeger: kok.hedefOlcek(index)
                 property int parlamaSurum: model.parlama
                 property real parParlama: 0

@@ -34,7 +34,7 @@ from .uygulamalar import (
 
 KOK = Path(__file__).resolve().parent.parent
 
-_ALAN_BOSLUK = 10
+_ALAN_BOSLUK = 12
 _YAN_BOSLUK = 16
 _PANEL_YUKSEKLIK = 100
 _PANEL_DIKEY_BOSLUK = 12
@@ -42,6 +42,8 @@ _ALT_PAY = 12
 # Pencere opak: buyuyen ikonlar icin panel ustunde pay, golge icin altta 10 px.
 # Kalan alan masaustu goruntusuyle doldurulur; saydamlik/compositor gerekmez.
 _PENCERE_UST_PAY = 80
+# Yatay pay: buyuyen ikonlar komsularini itince panel genisler, kirpilma olmaz.
+_PENCERE_YAN_PAY = 120
 
 
 class ArkaplanSaglayici(QQuickImageProvider):
@@ -123,9 +125,9 @@ class Dock(QWidget):
         self._hucre_yukseklik = int(ikon * buyutme)
         taban = ikon * len(self.uygulamalar) + _ALAN_BOSLUK * max(0, len(self.uygulamalar) - 1)
         self._taban_panel_genislik = taban + 2 * _YAN_BOSLUK
-        self._gen = self._taban_panel_genislik
+        self._gen = self._taban_panel_genislik + 2 * _PENCERE_YAN_PAY
         self._yuk = self._panel_yukseklik + _ALT_PAY + _PENCERE_UST_PAY
-        self._panel_x = 0
+        self._panel_x = _PENCERE_YAN_PAY
         self._panel_y = self._yuk - _ALT_PAY - self._panel_yukseklik
 
         ekran = QApplication.primaryScreen().geometry()
