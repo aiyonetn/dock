@@ -258,8 +258,14 @@ def _claude_oku() -> dict:
 def oku() -> dict:
     """Iki saglayiciyi da okur; hata durumunda 'yok' doner."""
     sonuc = {"codex": _bos(), "claude": _bos()}
+    sahte = os.environ.get("DOCK_LIMIT_DEMO")
     try:
         sonuc["codex"] = _codex_oku()
+        if sahte:
+            parcalar = [p for p in sahte.split(",") if p.strip()]
+            for anahtar, deger in zip(("session", "weekly"), parcalar):
+                sonuc["codex"][anahtar] = {"percent": _yuzde(deger), "reset": None}
+            sonuc["codex"]["kaynak"] = "api"
     except Exception:
         sonuc["codex"] = _bos("hata")
     try:
