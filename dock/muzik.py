@@ -70,7 +70,7 @@ class MuzikModel(QObject):
         return resim
 
     def _demo_kapak(self) -> str:
-        hedef = self._kapak_dizini() / "demo.png"
+        hedef = self._kapak_dizini() / "demo-kare.png"
         if hedef.is_file():
             return str(hedef)
         resim = QImage(176, 176, QImage.Format_ARGB32)
@@ -92,7 +92,7 @@ class MuzikModel(QObject):
         yol.quadTo(108, 60, 86, 60)
         boya.drawPath(yol)
         boya.end()
-        self._yuvarlat(resim, 24).save(str(hedef))
+        resim.save(str(hedef))
         return str(hedef)
 
     def _renk_hesapla(self, yol: str) -> str:
@@ -122,7 +122,7 @@ class MuzikModel(QObject):
                 pass
         if not url:
             return None
-        ad = hashlib.sha1(url.encode()).hexdigest()
+        ad = hashlib.sha1(("v2:" + url).encode()).hexdigest()
         hedef = self._kapak_dizini() / f"{ad}.jpg"
         renk_yolu = self._kapak_dizini() / f"{ad}.json"
         if hedef.is_file() and renk_yolu.is_file():
@@ -153,7 +153,6 @@ class MuzikModel(QObject):
         resim = resim.copy(
             (resim.width() - taraf) // 2, (resim.height() - taraf) // 2, taraf, taraf
         ).scaled(176, 176, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-        resim = self._yuvarlat(resim, 24)
         resim.save(str(hedef), "JPEG", 88)
         renk = self._renk_hesapla(str(hedef))
         renk_yolu.write_text(json.dumps({"renk": renk}))
@@ -174,7 +173,7 @@ class MuzikModel(QObject):
         if not url:
             self._kapak_uygula(self._demo_kapak(), self._renk_hesapla(self._demo_kapak()))
             return
-        ad = hashlib.sha1(url.encode()).hexdigest()
+        ad = hashlib.sha1(("v2:" + url).encode()).hexdigest()
         hedef = self._kapak_dizini() / f"{ad}.jpg"
         if hedef.is_file():
             try:

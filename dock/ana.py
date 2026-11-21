@@ -26,7 +26,7 @@ from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from . import ayarlar, ikon, x11
+from . import ayarlar, ikon, tema, x11
 from .limit_model import LimitModel, LimitYonetici
 from .muzik import MuzikModel
 from .model import IkonModel
@@ -229,15 +229,24 @@ class Dock(QWidget):
         baglam.setContextProperty("_pencereSol", self._x)
         baglam.setContextProperty("_ekranGenislik", self._ekran.width())
         baglam.setContextProperty(
+            "yaricaplar",
+            {
+                "panel": tema.PANEL_YARICAP,
+                "kart": tema.KART_YARICAP,
+                "kartKapak": tema.KART_KAPAK_YARICAP,
+                "ikonKapak": round(64 * 0.8 * tema.IKON_KAPAK_ORAN),
+            },
+        )
+        baglam.setContextProperty(
             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
         )
         # Golge gorseli: her karede blur yerine tek dokulu dikdortgen.
         self.saglayici.goruntuler["golge"] = self._golge_uret(
-            self._taban_panel_genislik + 40, self._panel_yukseklik + 40, 6, 20, 20
+            self._taban_panel_genislik + 40, self._panel_yukseklik + 40, 6, 20, tema.PANEL_YARICAP
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
-        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, 14)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, 14)
+        self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, tema.KART_YARICAP)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, tema.KART_YARICAP)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -479,7 +488,7 @@ class Dock(QWidget):
 
     @staticmethod
     def _bulanik(resim: QImage, kat: int = 10) -> QImage:
-        return Dock._cam(resim, kat, 150, 20)
+        return Dock._cam(resim, kat, 150, tema.PANEL_YARICAP)
 
     def _kart_arkaplan_yenile(self) -> None:
         if self._tam is None or self._kart_rect is None:
@@ -492,7 +501,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
+        goruntu = self._cam(parca, 18, 102, tema.KART_YARICAP, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._kart_hash:
             return
@@ -551,7 +560,7 @@ class Dock(QWidget):
         x = max(0, min(x, self._tam.width() - gen))
         y = max(0, min(y, self._tam.height() - yuk))
         parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, 14, QColor(self.muzik_model.renk))
+        goruntu = self._cam(parca, 18, 102, tema.KART_YARICAP, QColor(self.muzik_model.renk))
         ozet = sha1(bytes(goruntu.constBits())).hexdigest()
         if ozet == self._muzik_hash:
             return
