@@ -9,14 +9,14 @@ Item {
     property string arkaplanPanel: ""
     property string vurgu: "#8fb4ff"
 
-    // Referans olculeri: ikon 56, panel 76, yan 12, ara 8, alt bosluk 10.
-    readonly property real ikonBoyut: ayar ? ayar.iconSize : 64
-    readonly property real buyutmeCarpan: ayar ? ayar.buyutme : 1.9
-    readonly property real bosluk: 12
-    readonly property real yanBosluk: 16
+    // Python'daki dock.olcu.hesapla() sonucu: ekrana sigan etkin olculer.
+    readonly property real ikonBoyut: olcu.ikonBoyut
+    readonly property real buyutmeCarpan: olcu.buyutme
+    readonly property real bosluk: olcu.bosluk
+    readonly property real yanBosluk: olcu.yanBosluk
+    readonly property real panelYukseklik: olcu.panelYukseklik
+    readonly property real altPay: olcu.altPay
     readonly property real icBosluk: Math.round((panelYukseklik - ikonBoyut) / 2)
-    readonly property real panelYukseklik: 108
-    readonly property real altPay: 12
     readonly property real hucreYuksekligi: Math.round(ikonBoyut * buyutmeCarpan)
     readonly property real tabanGenislik: ikonSayisi > 0
         ? ikonSayisi * ikonBoyut + (ikonSayisi - 1) * bosluk : 0

@@ -46,21 +46,20 @@ cfg iconSize 84
 cfg autoHide false
 # 3. ikonun ekran koordinati (varsayilan ayarlarla hesaplanir).
 read -r IX IY < <("$PY" - <<'PY'
-import json
+import json, subprocess
 from pathlib import Path
 from dock.uygulamalar import onerilen_uygulamalar, secilenler, tara
 from dock.ayarlar import VARSAYILAN
+from dock.olcu import hesapla
 p = Path.home() / ".config" / "dock" / "ayar.json"
 ayar = {**VARSAYILAN, **json.loads(p.read_text())}
-u = tara()
-h = onerilen_uygulamalar(u)
-sec = secilenler(h, ayar["sabitlenen"])
-ikon = int(ayar["iconSize"]); bosluk = 12; yan = 16
-panel = ikon * len(sec) + bosluk * max(0, len(sec) - 1) + 2 * yan
-sol = (1440 - panel) // 2
-x = sol + yan + 2 * (ikon + bosluk) + ikon // 2
-# panel ekran altindan 10 px yukarida, ikon panel icinde 10 px altta
-y = 900 - 12 - 12 - ikon // 2
+sec = secilenler(onerilen_uygulamalar(tara()), ayar["sabitlenen"])
+n = len(sec) + 3  # muzik + AI + sistem dock'a eklenir
+g = subprocess.run(["xdotool", "getdisplaygeometry"], capture_output=True, text=True).stdout.split()
+W, H = int(g[0]), int(g[1])
+o = hesapla(W, n, int(ayar["iconSize"]), float(ayar["buyutme"]))
+x = o.pencere_x + o.panel_x + o.yan_bosluk + 2 * (o.ikon_boyut + o.bosluk) + o.ikon_boyut // 2
+y = H - 12 - 12 - o.ikon_boyut // 2
 print(x, y)
 PY
 )

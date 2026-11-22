@@ -22,12 +22,12 @@ from PySide6.QtCore import (
     Signal,
     Slot,
 )
-from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QImage, QPainter, QPainterPath
+from PySide6.QtGui import QColor, QCursor, QFont, QFontDatabase, QImage, QPainter
 from PySide6.QtQuick import QQuickImageProvider
 from PySide6.QtQuickWidgets import QQuickWidget
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
-from . import ayarlar, ikon, tema, x11
+from . import ayarlar, ikon, olcu, tema, x11
 from .limit_model import LimitModel, LimitYonetici
 from .muzik import MuzikModel
 from .model import IkonModel
@@ -214,20 +214,36 @@ class Dock(QWidget):
 
     # --- olculer -----------------------------------------------------------
     def _olcu_hesapla(self) -> None:
-        ikon = int(self.ayar["iconSize"])
-        buyutme = float(self.ayar["buyutme"])
-        self._panel_yukseklik = _PANEL_YUKSEKLIK
-        self._hucre_yukseklik = int(ikon * buyutme)
-        taban = ikon * len(self.uygulamalar) + _ALAN_BOSLUK * max(0, len(self.uygulamalar) - 1)
-        self._taban_panel_genislik = taban + 2 * _YAN_BOSLUK
-        self._gen = self._taban_panel_genislik + 2 * _PENCERE_YAN_PAY
-        self._yuk = self._panel_yukseklik + _ALT_PAY + _PENCERE_UST_PAY
-        self._panel_x = _PENCERE_YAN_PAY
-        self._panel_y = self._yuk - _ALT_PAY - self._panel_yukseklik
-
         ekran = QApplication.primaryScreen().geometry()
         self._ekran = ekran
-        self._x = ekran.x() + (ekran.width() - self._gen) // 2
+        olcu_ = olcu.hesapla(
+            ekran.width(),
+            len(self.uygulamalar),
+            int(self.ayar["iconSize"]),
+            float(self.ayar["buyutme"]),
+            bosluk=_ALAN_BOSLUK,
+            yan_bosluk=_YAN_BOSLUK,
+            pencere_yan_pay=_PENCERE_YAN_PAY,
+        )
+        self._olcu = olcu_
+        if olcu_.kirpildi:
+            print(
+                "BILGI: panel ekrana sigsin diye olcu kucultuldu: "
+                + ", ".join(olcu_.nedenler)
+                + f"; taban panel={olcu_.taban_panel_genislik}px, "
+                f"hover={olcu_.hover_panel_genislik}px, "
+                f"sinir={olcu_.sinir_genislik}px",
+                flush=True,
+            )
+        self._panel_yukseklik = _PANEL_YUKSEKLIK
+        self._hucre_yukseklik = int(round(olcu_.ikon_boyut * olcu_.buyutme))
+        self._taban_panel_genislik = olcu_.taban_panel_genislik
+        self._gen = olcu_.pencere_genislik
+        self._yuk = self._panel_yukseklik + _ALT_PAY + _PENCERE_UST_PAY
+        self._panel_x = olcu_.panel_x
+        self._panel_y = self._yuk - _ALT_PAY - self._panel_yukseklik
+
+        self._x = ekran.x() + olcu_.pencere_x
         # Pencere tabani ekran tabaninda; panel 10 px yukarida.
         self._y_gorunur = ekran.y() + ekran.height() - self._yuk
         self._y_gizli = ekran.y() + ekran.height()
@@ -250,6 +266,17 @@ class Dock(QWidget):
         baglam = self.gorunum.rootContext()
         baglam.setContextProperty("kopru", self.kopru)
         baglam.setContextProperty("ayar", self.ayar)
+        baglam.setContextProperty(
+            "olcu",
+            {
+                "ikonBoyut": self._olcu.ikon_boyut,
+                "buyutme": self._olcu.buyutme,
+                "bosluk": self._olcu.bosluk,
+                "yanBosluk": self._olcu.yan_bosluk,
+                "panelYukseklik": self._panel_yukseklik,
+                "altPay": _ALT_PAY,
+            },
+        )
         baglam.setContextProperty("ikonModel", self.model)
         baglam.setContextProperty("limitModel", self.limit_model)
         baglam.setContextProperty("muzikModel", self.muzik_model)
@@ -650,15 +677,19 @@ class Dock(QWidget):
 
         QML'de her karede MultiEffect/mask calistirmak yazilim render'da
         kare basina ~3-4 ms CPU yiyor; burada bir kez yapmak bedava.
+        Alfa maskesi ayri uretilir: DestinationIn bazi raster
+        yuzeylerde sessizce yok sayiliyor ve kose kare kaliyordu.
         """
-        resim = resim.convertToFormat(QImage.Format_RGBA8888)
-        boya = QPainter(resim)
+        resim = resim.convertToFormat(QImage.Format_ARGB32_Premultiplied)
+        maske = QImage(resim.size(), QImage.Format_ARGB32_Premultiplied)
+        maske.fill(Qt.transparent)
+        boya = QPainter(maske)
         boya.setRenderHint(QPainter.Antialiasing, True)
-        boya.setCompositionMode(QPainter.CompositionMode_DestinationIn)
-        yol = QPainterPath()
-        yol.addRoundedRect(0, 0, resim.width(), resim.height(), yaricap, yaricap)
-        boya.fillPath(yol, Qt.black)
+        boya.setPen(Qt.NoPen)
+        boya.setBrush(Qt.white)
+        boya.drawRoundedRect(resim.rect(), yaricap, yaricap)
         boya.end()
+        resim.setAlphaChannel(maske)
         return resim
 
     @staticmethod

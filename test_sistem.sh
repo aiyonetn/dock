@@ -48,18 +48,18 @@ import json, subprocess
 from pathlib import Path
 from dock.uygulamalar import onerilen_uygulamalar, secilenler, tara
 from dock.ayarlar import VARSAYILAN
+from dock.olcu import hesapla
 yol = Path(__import__('os').environ['XDG_CONFIG_HOME']) / 'dock' / 'ayar.json'
 ayar = {**VARSAYILAN, **json.loads(yol.read_text())}
 sec = secilenler(onerilen_uygulamalar(tara()), ayar['sabitlenen'])
 n = len(sec) + 3
-ikon = int(ayar['iconSize']); bosluk = 12; yan = 16
 g = subprocess.run(['xdotool', 'getdisplaygeometry'], capture_output=True, text=True).stdout.split()
 W, H = int(g[0]), int(g[1])
-panel = ikon * n + bosluk * (n - 1) + 2 * yan
-sol = (W - panel) // 2
-x = sol + yan + (n - 1) * (ikon + bosluk) + ikon // 2
-y = H - 12 - 12 - ikon // 2
-print(x, y, W, H, ikon)
+o = hesapla(W, n, int(ayar['iconSize']), float(ayar['buyutme']))
+satir_sol = o.pencere_x + o.panel_x + o.yan_bosluk
+x = satir_sol + (n - 1) * (o.ikon_boyut + o.bosluk) + o.ikon_boyut // 2
+y = H - 12 - 12 - o.ikon_boyut // 2
+print(x, y, W, H, o.ikon_boyut)
 PY
 )
 

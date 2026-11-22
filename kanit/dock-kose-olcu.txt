@@ -1,0 +1,42 @@
+DOCK KOSE / GENISLIK OLCUMU  (22 Kas 2026, Xvfb 1440x900x24)
+Zemin: 2 px yatay siyah/beyaz zebra (#0A0A0A / #FAFAFA).
+Siniflandirma: parlaklik 30..200 = panel (10x10 blur + koyu tint),
+<=12 veya >=240 = masaustu (zebra keskin kalir). PySide6 QImage ile
+piksel piksel okundu.
+
+=== ONCE (HEAD e00d6f6, kanit/dock-kose-once.png) ===
+taban panel = 15*84 + 14*12 + 2*16 = 1460 px
+pencere      = 1460 + 2*120        = 1700 px
+x            = (1440-1700)//2      = -130 px
+panel ekran  = -130+120 .. -130+120+1460 = -10 .. 1450  (iki ucta 10 px tasma)
+y=870 satiri : 0..1439 panel (olculen 1440 px, tum genislik)
+(70,780)=80  (100,782)=65  (700,870)=58  -> hepsi panel; kose yayi gorunmuyor.
+
+=== SONRA (bu degisiklik, kanit/dock-kose-sonra.png) ===
+Istenen: ikon 84, buyutme 1.9, 15 ikon.
+Sigdirma siniri = 1440 - 2*24 = 1392 px (hem taban hem hover icin).
+Otomatik kucultme: ikon 84 -> 74  (log: "BILGI: ... ikon 84->74")
+  taban panel = 15*74 + 14*12 + 2*16 = 1310 px   (<= 1392)
+  hover panel = 1310 + (1.9-1)*74    = 1377 px   (<= 1392)
+pencere genisligi = 1377 + 2*31 = 1439 px;  pencere x = 0
+  -> ekran 0..1439 icinde, tasma yok.
+panel ekran x = 0 + 65 = 65 .. 1374 (nominal, genislik 1310)
+kose yaricapi = 26 px (tema.PANEL_YARICAP; degismedi)
+olculen taban panel (y=870) = 66..1373 -> 1308 px gorunur govde
+  (nominal 1310; 1 px sol + 1 px sag kenar yumusatma payi)
+olculen hover panel (kanit/dock-kose-hover.png, y=870) = 32..1406 -> 1375 px
+  (nominal 1377); sol emniyet 32 px, sag emniyet 33 px -> >=24 px saglandi.
+
+KOSE KANITI (sayisal):
+Panel ust kenari y=780, sol kenar x=65, yaricap r=26.
+y=782 (ustten 2 px) icin yay siniri:
+  x = L + r - sqrt(r^2 - (r-2)^2) = 65 + 26 - sqrt(676-576) = 81.0
+  (70,782)  = 10  -> yay DISI, masaustu zebra siyahi (referans 10), panel degil
+  (100,782) = 65  -> yay ICI, panel grisi (blur+tint)
+  (70,780)  = 250 -> yay disi, masaustu zebra beyazi (panel 58-65 arasi)
+y=870 satiri: 0..65 ve 1374..1439 masaustu (zebra 8/250), 66..1373 panel.
+ONCE ayni satir 0..1439 panel idi (kose ekran disinda kaldigi icin).
+
+NOT: kose yuvarlatma maskesi de duzeltildi; eski DestinationIn yolu raster
+yuzeyde sessizce etkisizdi, panel arka plani kare kaliyordu. Artik alfa
+maskesi setAlphaChannel ile uygulaniyor (dock/ana.py _koseleri_yuvarlat).
