@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="148" height="101" viewBox="54 86 148 101">
+  <defs>
+    <mask id="bellek-govde">
+      <rect x="54" y="86" width="148" height="74" rx="10" fill="#FFFFFF"/>
+      <rect x="84" y="112" width="16" height="14" rx="4" fill="#000000"/>
+      <rect x="116" y="112" width="16" height="14" rx="4" fill="#000000"/>
+      <rect x="146" y="112" width="22" height="14" rx="4" fill="#000000"/>
+    </mask>
+  </defs>
+  <rect x="54" y="86" width="148" height="74" rx="10" fill="#FFFFFF" mask="url(#bellek-govde)"/>
+  <g fill="none" stroke="#FFFFFF" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M78 160v20M102 160v20M126 160v20M150 160v20M174 160v20"/>
+  </g>
+</svg>

@@ -1,0 +1,43 @@
+mpv MPRIS: org.mpris.MediaPlayer2.mpv
+--- gercek MPRIS verisi ---
+MPRIS baslik='Gece Sürüşü' sanatci='Test Sanatçı' album='Deneme Albümü' sureMs=30000000 konumMs=8386180
+MPRIS konum artisi: (<int64 8386180>,) -> (<int64 9936315>,)
+kapak-kirmizi: kart 360x84, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=yok
+kapak-mavi: kart 360x84, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=yok
+iki kapak: kirmizi kapak rgb=[193, 57, 43] / mavi kapak rgb=[31, 111, 234]; 20/20 nokta alfa=255, zemin rgb iki kapakta da 28,28,28 (degismedi)
+muzik-tam: kart 360x84, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/muzik-tam.png
+duzen 0 muzik-tam: kart 360x84+1020+680 baslik='Gece Sürüşü' sanatci='Test Sanatçı' sure=30000ms konum=3536ms
+tam yerlesim: secici alt=680+21, baslik ust=680+28, bosluk=7 px (>=6)
+muzik-kompakt: kart 300x68, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/muzik-kompakt.png
+duzen 1 muzik-kompakt: kart 300x68+1050+696 baslik='Gece Sürüşü' sanatci='Test Sanatçı' sure=30000ms konum=6238ms
+muzik-mini: kart 120x120, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/muzik-mini.png
+duzen 2 muzik-mini: kart 120x120+1140+644 baslik='Gece Sürüşü' sanatci='Test Sanatçı' sure=30000ms konum=11238ms
+muzik-bar: kart 380x56, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/muzik-bar.png
+duzen 3 muzik-bar: kart 380x56+1010+708 baslik='Gece Sürüşü' sanatci='Test Sanatçı' sure=30000ms konum=15238ms
+bar yerlesim: sure kutusu sag=1010+300, oynat sol=1010+310, bosluk=10 px (>=10)
+oynat/duraklat: once=(<'Playing'>,) sonra=(<'Paused'>,) geri=(<'Playing'>,)
+ses-cikis: kart 320x110, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/ses-cikis.png
+ses yerlesim: cubuk sag ucu=1311, daire sol kenari=1320, bosluk=8 px (>=8), cubuk sag payi=48 px (>=48), dikey merkez ikisi de 732
+--- ses cikisi ---
+hacim once: Volume: front-left: 52428 /  80% / -5.81 dB,   front-right: 52428 /  80% / -5.81 dB
+        balance 0.00
+hacim sonra: Volume: front-left: 26214 /  40% / -23.88 dB,   front-right: 26214 /  40% / -23.88 dB
+        balance 0.00
+mute once: Mute: no
+mute dugmesi sonrasi: Mute: yes
+mute geri: Mute: no
+mikrofon: kart 320x110, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/mikrofon.png
+--- mikrofon ---
+kaynak: auto_null.monitor
+gercek kaynak sayisi (monitor haric): 0
+mikrofon mute once: Mute: no
+mikrofon mute dugmesi sonrasi: Mute: yes
+mikrofon mute geri: Mute: no
+cikis mute (mikrofon kartindan): Mute: no -> Mute: yes -> geri
+--- kalicilik ---
+yeniden acilista gorunum: 5 (beklenen 5)
+QSettings: [General] gorunum=5 
+--- oynatici yok ---
+demo=True baslik='Midnight Drive'
+muzik-demo: kart 360x84, 20 nokta alfa=255, rgb=28,28,28 (tumu), kirpim=kanit/muzik-demo.png
+TAMAM: 4 duzen + ses + mikrofon + opak zemin kanitlari hazir.

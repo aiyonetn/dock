@@ -1,6 +1,7 @@
 """Dock penceresi, arka plan yakalama ve otomatik gizlenme."""
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import threading
@@ -30,6 +31,8 @@ from . import ayarlar, ikon, tema, x11
 from .limit_model import LimitModel, LimitYonetici
 from .muzik import MuzikModel
 from .model import IkonModel
+from .ses import SesModel
+from .sistem import SistemModel, SistemYonetici
 from .uygulamalar import (
     Uygulama,
     baslat,
@@ -82,6 +85,10 @@ class Kopru(QObject):
     kartKonum = Signal(int, int, int, int)
     muzikIstendi = Signal()
     muzikKonum = Signal(int, int, int, int)
+    sistemIstendi = Signal()
+    sistemSecildi = Signal(int)
+    sistemKonum = Signal(int, int, int, int)
+    sistemSekme = Signal(int)
     panelGenislik = Signal(int, int)
 
     def __init__(self, model: IkonModel, uygulamalar: list[Uygulama]) -> None:
@@ -98,6 +105,18 @@ class Kopru(QObject):
     def muzik_konumu(self, x: int, y: int, gen: int, yuk: int) -> None:
         self.muzikKonum.emit(x, y, gen, yuk)
 
+    @Slot(int, int, int, int)
+    def sistem_konumu(self, x: int, y: int, gen: int, yuk: int) -> None:
+        self.sistemKonum.emit(x, y, gen, yuk)
+
+    @Slot(int)
+    def sistem_sekme(self, indeks: int) -> None:
+        self.sistemSekme.emit(indeks)
+
+    @Slot(int)
+    def sistem_sec(self, indeks: int) -> None:
+        self.sistemSecildi.emit(indeks)
+
     @Slot(int, int)
     def panel_genislik(self, gen: int, x: int) -> None:
         self.panelGenislik.emit(gen, x)
@@ -112,6 +131,9 @@ class Kopru(QObject):
             return
         if uygulama.kimlik == "muzik.desktop":
             self.muzikIstendi.emit()
+            return
+        if uygulama.kimlik == "sistem.desktop":
+            self.sistemIstendi.emit()
             return
         self.kartKapat.emit()
         surec = baslat(uygulama)
@@ -146,10 +168,19 @@ class Dock(QWidget):
         self.kopru.kartKonum.connect(self._kart_konum_guncelle)
         self.kopru.muzikIstendi.connect(self._muzik_degistir)
         self.kopru.muzikKonum.connect(self._muzik_konum_guncelle)
+        self.kopru.sistemIstendi.connect(self._sistem_degistir)
+        self.kopru.sistemSecildi.connect(self._sistem_sec)
+        self.kopru.sistemKonum.connect(self._sistem_konum_guncelle)
+        self.kopru.sistemSekme.connect(self._sistem_sekme_guncelle)
         self.kopru.panelGenislik.connect(self._panel_genislik_guncelle)
         self.muzik_model = MuzikModel(self)
+        self.ses_model = SesModel(self)
         self.limit_model = LimitModel(self)
         self.limit_yonetici = LimitYonetici(self.limit_model, self)
+        self.sistem_model = SistemModel(self)
+        self.sistem_yonetici = SistemYonetici(self.sistem_model, self)
+        self.sistem_yonetici.veriHazir.connect(self._sistem_isle)
+        self._sistem_acildi = False
         self._kart_bekle = False
         self.limit_yonetici.veriHazir.connect(self._ilk_limit_karti)
         self.saglayici = ArkaplanSaglayici()
@@ -157,9 +188,6 @@ class Dock(QWidget):
         self._kart_sayac = 0
         self._kart_hash = ""
         self._kart_anahtar = None
-        self._muzik_sayac = 0
-        self._muzik_hash = ""
-        self._muzik_anahtar = None
         self._tam_surum = 0
         self._muzik_rect: tuple[int, int, int, int] | None = None
         self._kart_rect: tuple[int, int, int, int] | None = None
@@ -225,6 +253,8 @@ class Dock(QWidget):
         baglam.setContextProperty("ikonModel", self.model)
         baglam.setContextProperty("limitModel", self.limit_model)
         baglam.setContextProperty("muzikModel", self.muzik_model)
+        baglam.setContextProperty("sesModel", self.ses_model)
+        baglam.setContextProperty("sistemModel", self.sistem_model)
         baglam.setContextProperty("ikonSayisi", len(self.uygulamalar))
         baglam.setContextProperty("_pencereSol", self._x)
         baglam.setContextProperty("_ekranGenislik", self._ekran.width())
@@ -246,7 +276,7 @@ class Dock(QWidget):
         )
         baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
         self.saglayici.goruntuler["kartGolge"] = self._golge_uret(340, 248, 7, 10, tema.KART_YARICAP)
-        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(340, 230, 7, 10, tema.KART_YARICAP)
+        self.saglayici.goruntuler["muzikGolge"] = self._golge_uret(540, 290, 7, 10, tema.KART_YARICAP)
         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
         if self.gorunum.status() == QQuickWidget.Error:
             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
@@ -266,10 +296,6 @@ class Dock(QWidget):
         self._kart_zaman = QTimer(self)
         self._kart_zaman.setInterval(500)
         self._kart_zaman.timeout.connect(self._kart_arkaplan_yenile)
-
-        self._muzik_zaman = QTimer(self)
-        self._muzik_zaman.setInterval(500)
-        self._muzik_zaman.timeout.connect(self._muzik_arkaplan_yenile)
 
         self._surec_zaman = QTimer(self)
         self._surec_zaman.setInterval(1500)
@@ -302,10 +328,12 @@ class Dock(QWidget):
     def _kartlari_kapat(self) -> None:
         self._kart_ayarla(False)
         self._muzik_ayarla(False)
+        self._sistem_ayarla(False)
 
     def _kart_ayarla(self, acik: bool) -> None:
         if acik:
             self._muzik_ayarla(False)
+            self._sistem_ayarla(False)
         kok = self.gorunum.rootObject()
         if kok is not None:
             kok.setProperty("kartAcik", acik)
@@ -334,31 +362,133 @@ class Dock(QWidget):
     def _muzik_ayarla(self, acik: bool) -> None:
         if acik:
             self._kart_ayarla(False)
+            self._sistem_ayarla(False)
         kok = self.gorunum.rootObject()
         if kok is not None:
             kok.setProperty("muzikAcik", acik)
         self.muzik_model.ui_aktif_ayarla(acik)
-        zaman = getattr(self, "_muzik_zaman", None)
-        if acik:
-            self._muzik_arkaplan_yenile()
-            if zaman is not None:
-                zaman.start()
-        elif zaman is not None:
-            zaman.stop()
+        self._muzik_durum_yaz()
         self._giris_maskesi_uygula()
 
     @Slot(int, int, int, int)
     def _muzik_konum_guncelle(self, x: int, y: int, gen: int, yuk: int) -> None:
         self._muzik_rect = (x, y, gen, yuk)
+        yol = os.environ.get("DOCK_MUZIK_GEOMETRI")
+        if yol:
+            try:
+                Path(yol).write_text(
+                    f"{self._x + x} {self._y_gorunur + y} {gen} {yuk}\n",
+                    encoding="utf-8",
+                )
+            except OSError:
+                pass
+        self._muzik_durum_yaz()
         self._giris_maskesi_uygula()
-        zaman = getattr(self, "_muzik_zaman", None)
-        if zaman is not None and zaman.isActive():
-            self._muzik_arkaplan_yenile()
+
+    def _muzik_durum_yaz(self) -> None:
+        """KANIT/otomasyon: kart durumunu JSON olarak disari yaz."""
+        yol = os.environ.get("DOCK_MUZIK_DURUM")
+        if not yol or self._muzik_rect is None:
+            return
+        x, y, gen, yuk = self._muzik_rect
+        model = self.muzik_model
+        kok = self.gorunum.rootObject()
+        veri = {
+            "acik": bool(kok.property("muzikAcik")) if kok is not None else False,
+            "x": self._x + x,
+            "y": self._y_gorunur + y,
+            "gen": gen,
+            "yuk": yuk,
+            "gorunum": model.gorunum,
+            "demo": model.demo,
+            "baslik": model.baslik,
+            "sanatci": model.sanatci,
+            "album": model.album,
+            "sureMs": model.sureMs,
+            "konumMs": model.konumMs,
+            "caliyor": model.caliyor,
+        }
+        try:
+            Path(yol).write_text(json.dumps(veri, ensure_ascii=False), encoding="utf-8")
+        except OSError:
+            pass
 
     def _kart_degistir(self) -> None:
         kok = self.gorunum.rootObject()
         if kok is not None:
             self._kart_ayarla(not bool(kok.property("kartAcik")))
+
+    # --- sistem karti ------------------------------------------------------
+    @Slot(object)
+    def _sistem_isle(self, veri: dict) -> None:
+        yol = os.environ.get("DOCK_SISTEM_LOG")
+        if yol:
+            try:
+                Path(yol).write_text(json.dumps(veri, ensure_ascii=False), encoding="utf-8")
+            except OSError:
+                pass
+        if not self._sistem_acildi and os.environ.get("DOCK_SISTEM") == "1":
+            self._sistem_acildi = True
+            try:
+                sekme = max(0, min(4, int(os.environ.get("DOCK_SISTEM_TAB", "0"))))
+            except ValueError:
+                sekme = 0
+            self._sistem_ayarla(True, sekme)
+
+    def _sistem_degistir(self) -> None:
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            self._sistem_ayarla(not bool(kok.property("sistemAcik")))
+
+    @Slot(int)
+    def _sistem_sec(self, indeks: int) -> None:
+        self._sistem_ayarla(True, max(0, min(4, int(indeks))))
+
+    def _sistem_ayarla(self, acik: bool, sekme: int | None = None) -> None:
+        if acik:
+            self._kart_ayarla(False)
+            self._muzik_ayarla(False)
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("sistemAcik", acik)
+            if sekme is not None:
+                kok.setProperty("sistemSekme", sekme)
+        sekme = int(kok.property("sistemSekme") or 0) if kok is not None else 0
+        self.sistem_yonetici.izle(acik and sekme in (3, 4))
+        durum = os.environ.get("DOCK_DURUM_LOG")
+        if durum:
+            try:
+                Path(durum).write_text("1\n" if acik else "0\n", encoding="utf-8")
+            except OSError:
+                pass
+        self._giris_maskesi_uygula()
+
+    @Slot(int)
+    def _sistem_sekme_guncelle(self, indeks: int) -> None:
+        kok = self.gorunum.rootObject()
+        if kok is not None:
+            kok.setProperty("sistemSekme", max(0, min(4, int(indeks))))
+            if bool(kok.property("sistemAcik")):
+                self.sistem_yonetici.izle(int(indeks) in (3, 4))
+
+    @Slot(int, int, int, int)
+    def _sistem_konum_guncelle(self, x: int, y: int, gen: int, yuk: int) -> None:
+        yol = os.environ.get("DOCK_GEOMETRI")
+        if yol:
+            try:
+                Path(yol).write_text(
+                    f"{self._x + x} {self._y_gorunur + y} {gen} {yuk}\n",
+                    encoding="utf-8",
+                )
+            except OSError:
+                pass
+        self._giris_maskesi_uygula()
+
+    def closeEvent(self, olay) -> None:  # noqa: N802 (Qt API)
+        yonetici = getattr(self, "sistem_yonetici", None)
+        if yonetici is not None:
+            yonetici.durdur()
+        super().closeEvent(olay)
 
     # --- konum / gorunurluk ------------------------------------------------
     def _ilk_konum(self) -> None:
@@ -413,7 +543,9 @@ class Dock(QWidget):
         ]
         kok = self.gorunum.rootObject()
         if kok is not None and (
-            bool(kok.property("kartAcik")) or bool(kok.property("muzikAcik"))
+            bool(kok.property("kartAcik"))
+            or bool(kok.property("muzikAcik"))
+            or bool(kok.property("sistemAcik"))
         ):
             bolgeler.append((0, 0, self._gen, self._panel_y))
         try:
@@ -548,28 +680,6 @@ class Dock(QWidget):
             max(2, gen // kat), max(2, yuk // kat), Qt.IgnoreAspectRatio, Qt.SmoothTransformation
         )
         return kucuk.scaled(gen, yuk, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
-
-    def _muzik_arkaplan_yenile(self) -> None:
-        if self._tam is None or self._muzik_rect is None:
-            return
-        anahtar = (self._tam_surum, self._muzik_rect, self.muzik_model.renk)
-        if anahtar == self._muzik_anahtar:
-            return
-        self._muzik_anahtar = anahtar
-        x, y, gen, yuk = self._muzik_rect
-        x = max(0, min(x, self._tam.width() - gen))
-        y = max(0, min(y, self._tam.height() - yuk))
-        parca = self._tam.copy(QRect(x, y, gen, yuk))
-        goruntu = self._cam(parca, 18, 102, tema.KART_YARICAP, QColor(self.muzik_model.renk))
-        ozet = sha1(bytes(goruntu.constBits())).hexdigest()
-        if ozet == self._muzik_hash:
-            return
-        self._muzik_hash = ozet
-        self.saglayici.goruntuler["muzikKart"] = goruntu
-        self._muzik_sayac += 1
-        kok = self.gorunum.rootObject()
-        if kok is not None:
-            kok.setProperty("muzikKaynak", f"image://arkaplan/muzikKart?{self._muzik_sayac}")
 
     def _arkaplan_tazele(self) -> None:
         # Gorunurken kendi penceremizi yakalamamak icin yalniz gizliyken
@@ -719,6 +829,13 @@ def calistir() -> int:
     if islenmis_ai:
         ai_uygulama.ikon = islenmis_ai
         secili.append(ai_uygulama)
+
+    sistem_ikon = KOK / "assets" / "sistem.svg"
+    sistem_uygulama = Uygulama(kimlik="sistem.desktop", ad="Sistem", ikon=str(sistem_ikon))
+    islenmis_sistem = ikon.hazirla(str(sistem_ikon))
+    if islenmis_sistem:
+        sistem_uygulama.ikon = islenmis_sistem
+        secili.append(sistem_uygulama)
 
     pencere = Dock(ayar, secili)
     pencere.show()

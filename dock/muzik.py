@@ -11,7 +11,7 @@ from pathlib import Path
 import os
 from urllib.request import urlopen
 
-from PySide6.QtCore import Property, QObject, QTimer, Signal, Slot, Qt
+from PySide6.QtCore import Property, QObject, QSettings, QTimer, Signal, Slot, Qt
 from PySide6.QtDBus import QDBusConnection, QDBusInterface
 from PySide6.QtGui import QColor, QImage, QLinearGradient, QPainter, QPainterPath
 
@@ -46,6 +46,11 @@ class MuzikModel(QObject):
         self._deneme = 0
         self._ui_sayac = 0
         self._ui_aktif = False
+        self._ayar = QSettings("dock", "muzik")
+        try:
+            self._gorunum = max(0, min(5, int(self._ayar.value("gorunum", 0))))
+        except (TypeError, ValueError):
+            self._gorunum = 0
         self._zaman = QTimer(self)
         self._zaman.setInterval(1000)
         self._zaman.timeout.connect(self._tik)
@@ -228,6 +233,17 @@ class MuzikModel(QObject):
     konumMs = Property(int, lambda s: s._konum, notify=degisti)
     caliyor = Property(bool, lambda s: s._caliyor, notify=degisti)
     demo = Property(bool, lambda s: s._demo, notify=degisti)
+    gorunum = Property(int, lambda s: s._gorunum, notify=degisti)
+
+    @Slot(int)
+    def gorunumSec(self, indeks: int) -> None:
+        indeks = max(0, min(5, int(indeks)))
+        if indeks == self._gorunum:
+            return
+        self._gorunum = indeks
+        self._ayar.setValue("gorunum", indeks)
+        self._ayar.sync()
+        self.degisti.emit()
 
     # --- MPRIS -------------------------------------------------------------
     def _mpris_ara(self) -> None:

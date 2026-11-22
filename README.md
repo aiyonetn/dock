@@ -17,8 +17,10 @@ başlatma, otomatik gizlenme ve iki tane cam kart: **AI kullanım limitleri** ve
   Veri yoksa uydurma yüzde yazmaz — "yapılandırılmadı" der.
 - **Müzik kartı:** albüm kapağı, parça/sanatçı, süre çubuğu, geri/oynat/ileri;
   oynatıcı MPRIS (`org.mpris.MediaPlayer2.*`) üzerinden bulunur, yoksa demo modu
-- Cam görünüm: arkasındaki masaüstü bulanıklaştırılıp karta bindirilir; kart ve panel
-  `OpacityMask` ile yuvarlatılır, gölge ve kenar ışığı aynı radius'la üretilir
+- **Tek kartta 6 görünüm:** başlıktaki seçiciden tam / kompakt / mini / bar
+  "şimdi çalıyor" düzenleri ile ses çıkışı ve mikrofon; seçim yeniden açılışta hatırlanır
+- Panel ve AI kartı cam görünümlü: arkasındaki masaüstü bulanıklaştırılıp bindirilir;
+  müzik kartı ise tamamen opak `#1C1C1C` hap kartlardır (cam/blur yok)
 
 ## Gereksinimler
 
@@ -79,15 +81,38 @@ Dock'un sonundaki kıvılcım ikonuna tıklayınca ChatGPT/Codex ve Claude için
 
 ### Müzik kartı
 
-Dock'taki nota ikonuna tıklayınca "şimdi çalıyor" kartı açılır: albüm kapağı
-(yoksa çizilmiş nota glifi), parça/sanatçı/albüm, 4 px ilerleme çubuğu, süreler
-ve geri / oynat-duraklat / ileri düğmeleri.
+Dock'taki nota ikonuna tıklayınca opak `#1C1C1C` "şimdi çalıyor" hap kartı açılır.
+Zemin düz renktir; kapak rengi, cam, blur veya yarı saydam perde kullanılmaz.
+Dört düzen: tam 360×84 (44 px kapak, başlık/sanatçı, 3 px çubuk, süreler, 32 px
+oynat), kompakt 300×68 (36 px kapak, 2 px çubuk), mini 120×120 (48 px oynat +
+ilerleme yayı + kalan süre), bar 380×56 (32 px kapak, tek satır, 26 px oynat +
+22 px ileri).
 
 - Gerçek oynatıcı varsa `org.mpris.MediaPlayer2.*` QtDBus arayüzünden
   Metadata/PlaybackStatus/Position okunur; düğmeler PlayPause/Next/Previous çağırır.
 - Oynatıcı yoksa **demo modu** çalışır ("Midnight Drive · Demo Player", 3:48) ve kartın
   alt satırında `demo · oynatıcı yok` yazar; gerçek çalıyor izlenimi verilmez.
+- Kartın üst şeridindeki 6 küçük seçici tek kartta görünüm değiştirir: tam, kompakt,
+  mini, bar, ses çıkışı ve mikrofon. Seçili simge mavi `#4CC2FF`; aynı anda yalnız biri
+  görünür ve seçim `QSettings("dock","muzik")` ile yeniden açılışta hatırlanır.
+- **Ses çıkışı:** varsayılan sink adı, yüzde, sürüklenebilir hacim çubuğu ve mute;
+  `pactl get-sink-volume` / `set-sink-volume` / `get-sink-mute` / `set-sink-mute` kullanılır.
+- **Mikrofon:** kaynak adı, seviye ve mute (`pactl set-source-mute`). Gerçek mikrofon
+  yoksa `.monitor` kaynağı yedek olarak gösterilir ve kart "mikrofon yok" yazar; mute
+  yine çalışır, kart çökmez.
 - AI limit ve müzik kartlarından yalnızca biri açık olabilir; dışına tıklamak kapatır.
+
+#### Görünümler
+
+| Tam | Kompakt | Mini |
+|---|---|---|
+| ![tam](docs/ekran/muzik-tam.png) | ![kompakt](docs/ekran/muzik-kompakt.png) | ![mini](docs/ekran/muzik-mini.png) |
+| Tam · 360×84 | Kompakt · 300×68 | Mini · 120×120 |
+
+| Bar | Ses çıkışı | Mikrofon |
+|---|---|---|
+| ![bar](docs/ekran/muzik-bar.png) | ![ses çıkışı](docs/ekran/ses-cikis.png) | ![mikrofon](docs/ekran/mikrofon.png) |
+| Bar · 380×56 | Ses çıkışı · 320×110 | Mikrofon · 320×110 |
 
 #### Müzik kartı cila
 

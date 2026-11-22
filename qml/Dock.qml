@@ -33,10 +33,10 @@ Item {
     property int ipucu: -1
     property bool kartAcik: false
     property bool muzikAcik: false
+    property bool sistemAcik: false
     property string kartKaynak: ""
-    property string muzikKaynak: ""
+    property int sistemSekme: 0
     property real aiMerkezX: 0
-    property Item muzikHucre: null
     property real pencereSol: _pencereSol
     property real ekranGenislik: _ekranGenislik
 
@@ -51,6 +51,9 @@ Item {
     }
 
     function hedefOlcek(i) {
+        // Sistem secim hucreleri kucuk ve notr kalir; buyutme yok.
+        if (i === ikonSayisi - 1)
+            return 1.0
         var n = yakinIkon
         if (n < 0)
             return 1.0
@@ -175,8 +178,6 @@ Item {
                 onWidthChanged: aiBildir()
                 Component.onCompleted: {
                     aiBildir()
-                    if (model.kimlik === "muzik.desktop")
-                        kok.muzikHucre = hucre
                 }
                 property real olcekDeger: kok.hedefOlcek(index)
                 property int parlamaSurum: model.parlama
@@ -206,6 +207,7 @@ Item {
                 Image {
                     id: simge
                     visible: model.kimlik !== "muzik.desktop"
+                        && model.kimlik !== "sistem.desktop"
                     anchors.centerIn: kutu
                     width: kutu.width
                     height: width
@@ -217,6 +219,44 @@ Item {
                     smooth: true
                     mipmap: false
                     asynchronous: true
+                }
+
+                // Sistem secimleri: kart disinda, panelde 5 kucuk notr ikon.
+                Item {
+                    visible: model.kimlik === "sistem.desktop"
+                    anchors.centerIn: kutu
+                    readonly property real dugme: Math.round(kok.ikonBoyut * 0.30)
+                    readonly property real ara: Math.max(2, Math.round(kok.ikonBoyut * 0.05))
+                    width: 2 * dugme + ara
+                    height: 3 * dugme + 2 * ara
+                    Repeater {
+                        model: 5
+                        delegate: Rectangle {
+                            x: (index % 2) * (width + parent.ara)
+                            y: Math.floor(index / 2) * (height + parent.ara)
+                            width: parent.dugme; height: width; radius: 6
+                            color: secFare.containsMouse ? "#26262A" : "transparent"
+                            Image {
+                                anchors.centerIn: parent
+                                width: Math.round(parent.width * 0.72)
+                                height: width
+                                source: index === 0 ? "../assets/cip.svg"
+                                    : index === 1 ? "../assets/bellek.svg"
+                                    : index === 2 ? "../assets/sec-ag.svg"
+                                    : index === 3 ? "../assets/sec-topcpu.svg"
+                                    : "../assets/sec-topram.svg"
+                                opacity: secFare.containsMouse ? 1.0 : 0.68
+                                smooth: true
+                            }
+                            MouseArea {
+                                id: secFare
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: kopru.sistem_sec(index)
+                            }
+                        }
+                    }
                 }
 
                 Item {
@@ -333,6 +373,7 @@ Item {
 
                 MouseArea {
                     anchors.fill: kutu
+                    enabled: model.kimlik !== "sistem.desktop"
                     cursorShape: Qt.PointingHandCursor
                     hoverEnabled: true
                     onEntered: ipucuZaman.start()
@@ -360,7 +401,7 @@ Item {
 
     // Kart acikken panel ustune tiklamak kapatir; ikonlar etkilenmez.
     MouseArea {
-        visible: kok.kartAcik || kok.muzikAcik
+        visible: kok.kartAcik || kok.muzikAcik || kok.sistemAcik
         z: 30
         anchors.top: parent.top
         anchors.left: parent.left
@@ -369,6 +410,7 @@ Item {
         onClicked: {
             kok.kartAcik = false
             kok.muzikAcik = false
+            kok.sistemAcik = false
             kopru.kartKapat()
         }
     }
@@ -376,7 +418,7 @@ Item {
     LimitKarti {
         id: kart
         z: 31
-        readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
+        readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 2)
         readonly property real hedefY: panelKutu.y - height - 16
         kartKaynak: kok.kartKaynak
         visible: kok.kartAcik || opacity > 0
@@ -396,12 +438,12 @@ Item {
     MusicKarti {
         id: muzikKart
         z: 31
-        kartKaynak: kok.muzikKaynak
-        readonly property real aiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
-        readonly property real kendiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 2)
-        readonly property real merkezX: kok.muzikHucre
-            ? satir.x + kok.muzikHucre.x + kok.muzikHucre.width / 2
-            : satir.x + satir.width - aiGenislik - kok.bosluk - kendiGenislik / 2
+        readonly property real merkezX: {
+            // Sabit (buyutmesiz) yuva: kart fare gezinirken yer degistirmez.
+            var i = Math.max(0, ikonSayisi - 3)
+            var tabanSol = (kok.width - kok.tabanGenislik) / 2
+            return tabanSol + i * (kok.ikonBoyut + kok.bosluk) + kok.ikonBoyut / 2
+        }
         readonly property real hedefY: panelKutu.y - height - 16
         visible: kok.muzikAcik || opacity > 0
         opacity: kok.muzikAcik ? 1 : 0
@@ -409,6 +451,28 @@ Item {
             Math.min(kok.ekranGenislik - 12 - width - kok.pencereSol,
                 merkezX - width / 2)))
         y: Math.round(hedefY + (kok.muzikAcik ? 0 : 6))
+        Behavior on opacity {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+        Behavior on y {
+            NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
+        }
+    }
+
+    SystemKarti {
+        id: sistemKart
+        z: 31
+        sekme: kok.sistemSekme
+        onSekmeChanged: kok.sistemSekme = sekme
+        readonly property real kendiGenislik: kok.ikonBoyut * kok.hedefOlcek(kok.ikonSayisi - 1)
+        readonly property real merkezX: satir.x + satir.width - kendiGenislik / 2
+        readonly property real hedefY: panelKutu.y - height - 16
+        visible: kok.sistemAcik || opacity > 0
+        opacity: kok.sistemAcik ? 1 : 0
+        x: Math.round(Math.max(12 - kok.pencereSol,
+            Math.min(kok.ekranGenislik - 12 - width - kok.pencereSol,
+                merkezX - width / 2)))
+        y: Math.round(hedefY + (kok.sistemAcik ? 0 : 6))
         Behavior on opacity {
             NumberAnimation { duration: 120; easing.type: Easing.OutQuad }
         }

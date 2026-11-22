@@ -1,0 +1,25 @@
+Müzik kartı opak v2 (lumabar düzeni) — test özeti (2026-11-21, Xvfb :99)
+
+test.sh            EXIT=0  (6 ekran görüntüsü + 60 sn boşta ölçüm; kanit/olcum.txt)
+test_sistem.sh     EXIT=0  (5 sistem kartı; sistem CPU 1.70% <= AI 1.10% + 1.00%)
+test_muzik.sh      EXIT=0  (opak zemin + 4 düzen + ses + mikrofon + MPRIS + kalıcılık)
+
+Müzik kartı görünümleri ve ekran sınırı (1440x900):
+- tam      360x84 +1020+680  -> sağ 1380, alt 764   (taşma yok)
+- kompakt  300x68 +1050+696  -> sağ 1350, alt 764   (taşma yok)
+- mini     120x120+1140+644  -> sağ 1260, alt 764   (taşma yok)
+- bar      380x56 +1010+708  -> sağ 1390, alt 764   (taşma yok)
+- ses      320x110+1040+654  -> sağ 1360, alt 764   (taşma yok)
+- mikrofon 320x110+1040+654  -> sağ 1360, alt 764   (taşma yok)
+
+Boşluk ölçümleri:
+- tam: seçici altı 701, başlık üstü 708 -> 7 px (>=6)
+- bar: süre kutusu sağı 1310, oynat solu 1320 -> 10 px (>=10)
+- ses: çubuk sağ ucu 1311, mute dairesi sol kenarı 1320 -> 8 px (>=8);
+  çubuk sağ payı 48 px (>=48); ikisi de dikey merkez 732.
+
+Opak zemin: her görünümde 20 nokta (sol/sağ iç kenar) alfa=255, rgb=28,28,28;
+kırmızı ve mavi kapakla zemin aynı kaldı; cam/blur yok.
+Kanıt görüntüleri 320-400 px genişlikte kırpıldı.
+
+Detaylı MPRIS/pactl/opaklık/boşluk ölçümleri: kanit/muzik-olcu.txt

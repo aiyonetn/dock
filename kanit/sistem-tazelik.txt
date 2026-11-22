@@ -1,0 +1,19 @@
+Sistem karti 70 sn tazelik kaniti
+ilk  : 2026-11-21 20:59:22  cpu=14.3%  ram=54.5%  indirme=131717 B/s  yukleme=59981.1 B/s  gecmis=7
+son  : 2026-11-21 21:00:24  cpu=8.6%  ram=54.4%  indirme=180056 B/s  yukleme=88434.6 B/s  gecmis=60
+gecen sure: 62.0 sn
+topCpu ilk: 
+topCpu son: 
+topRam ilk: 
+topRam son: 
+SONUC: GECTI
+
+--- Top CPU sekmesi, 40 sn (2026-11-21 21:04) ---
+ilk  : 2026-11-21 21:04:03  cpu=4.7%  ram=57%  gecmis=5
+son  : 2026-11-21 21:04:37  cpu=13%  ram=57.7%  gecmis=39
+gecen sure: 34.0 sn
+topCpu ilk: dockerd 1.9%, python 1.8%, kcompactd0 1.1%
+topCpu son: python 2.9%, omp 2.4%, forgejo 1.2%
+topRam ilk: python 1111 MB, omp 898 MB, python3 865 MB
+topRam son: omp 1178 MB, python 1111 MB, python3 865 MB
+SONUC: GECTI
