@@ -1,0 +1,4 @@
+#!/bin/sh
+# Waypoint has no check for this hook; it only runs the project's earlier hook of the same name, if there was one.
+git config --get waypoint.oncekiHooks >/dev/null 2>&1 || exit 0  # none: skip starting a second sh
+exec sh "$(dirname "$0")/onceki-hook" "$(basename "$0")" "$@"

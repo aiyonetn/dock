@@ -1,2 +1,7 @@
 .venv/
 __pycache__/
+kanit/test-cache/
+kanit/test-config/
+kanit/oturum.log
+kanit/sistem-oturum.log
+kanit/muzik-test/*.log

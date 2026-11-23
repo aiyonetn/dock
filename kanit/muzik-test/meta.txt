@@ -1,0 +1,1 @@
+(<{'xesam:album': <'Deneme Albümü'>, 'xesam:artist': <['Test Sanatçı']>, 'mpris:trackid': <objectpath '/0'>, 'xesam:title': <'Gece Sürüşü'>, 'xesam:url': <'file:///home/claudecodexsever/mpv-test/test.m4a'>, 'mpris:length': <int64 30000000>, 'mpris:artUrl': <'data:image/jpeg;base64,'>}>,)

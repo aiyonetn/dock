@@ -1,0 +1,153 @@
+--- a/dock/ana.py	2026-11-16 15:54:16.266608622 +0300
++++ b/dock/ana.py	2026-11-16 16:48:19.270261080 +0300
+@@ -16,7 +16,7 @@
+     Qt,
+     Slot,
+ )
+-from PySide6.QtGui import QCursor, QImage
++from PySide6.QtGui import QColor, QCursor, QImage, QPainter, QPainterPath
+ from PySide6.QtQuick import QQuickImageProvider
+ from PySide6.QtQuickWidgets import QQuickWidget
+ from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+@@ -160,6 +160,11 @@
+         baglam.setContextProperty(
+             "yerTutucu", QUrl.fromLocalFile(str(KOK / "assets" / "ikon-yok.svg")).toString()
+         )
++        # Golge gorseli: her karede blur yerine tek dokulu dikdortgen.
++        self.saglayici.goruntuler["golge"] = self._golge_uret(
++            self._taban_panel_genislik + 24, self._panel_yukseklik + 24
++        )
++        baglam.setContextProperty("golgeUrl", "image://arkaplan/golge")
+         self.gorunum.setSource(QUrl.fromLocalFile(str(KOK / "qml" / "Dock.qml")))
+         if self.gorunum.status() == QQuickWidget.Error:
+             hatalar = " | ".join(h.toString() for h in self.gorunum.errors())
+@@ -253,7 +258,45 @@
+             Qt.IgnoreAspectRatio,
+             Qt.SmoothTransformation,
+         )
+-        return kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
++        bulanik = kucuk.scaled(resim.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
++        return Dock._koseleri_yuvarlat(bulanik, 20)
++
++    @staticmethod
++    def _koseleri_yuvarlat(resim: QImage, yaricap: int) -> QImage:
++        """Kose yuvarlatmayi goruntuye bir kez uygular.
++
++        QML'de her karede MultiEffect/mask calistirmak yazilim render'da
++        kare basina ~3-4 ms CPU yiyor; burada bir kez yapmak bedava.
++        """
++        resim = resim.convertToFormat(QImage.Format_RGBA8888)
++        boya = QPainter(resim)
++        boya.setRenderHint(QPainter.Antialiasing, True)
++        boya.setCompositionMode(QPainter.CompositionMode_DestinationIn)
++        yol = QPainterPath()
++        yol.addRoundedRect(0, 0, resim.width(), resim.height(), yaricap, yaricap)
++        boya.fillPath(yol, Qt.black)
++        boya.end()
++        return resim
++
++    @staticmethod
++    def _golge_uret(gen: int, yuk: int, kat: int = 6) -> QImage:
++        """Panel golgesini bir kez uretir (yuvarlat + ucuz blur).
++
++        Onceden QML'de golge bir layer + MultiEffect idi ve panel genisligi
++        her degistiginde yeniden isleniyordu.
++        """
++        resim = QImage(max(4, gen), max(4, yuk), QImage.Format_RGBA8888)
++        resim.fill(Qt.transparent)
++        boya = QPainter(resim)
++        boya.setRenderHint(QPainter.Antialiasing, True)
++        boya.setPen(Qt.NoPen)
++        boya.setBrush(QColor(0, 0, 0, 150))
++        boya.drawRoundedRect(0, 0, gen, yuk, 20, 20)
++        boya.end()
++        kucuk = resim.scaled(
++            max(2, gen // kat), max(2, yuk // kat), Qt.IgnoreAspectRatio, Qt.SmoothTransformation
++        )
++        return kucuk.scaled(gen, yuk, Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+ 
+     def _arkaplan_yenile(self) -> None:
+         """Masaustunu yakalar. Pencere gorunurken kendi icerigini yakalamamak
+@@ -280,7 +323,9 @@
+                 self._panel_yukseklik,
+             )
+         )
+-        self.saglayici.goruntuler = {"tam": tam, "panel": self._bulanik(panel)}
++        # "golge" anahtarini koru: sozlugu tumden degistirmek gorseli siler.
++        self.saglayici.goruntuler["tam"] = tam
++        self.saglayici.goruntuler["panel"] = self._bulanik(panel)
+         self._sayac += 1
+         kok.setProperty("arkaplanTam", f"image://arkaplan/tam?{self._sayac}")
+         kok.setProperty("arkaplanPanel", f"image://arkaplan/panel?{self._sayac}")
+--- a/qml/Dock.qml	2026-11-16 15:54:16.266608622 +0300
++++ b/qml/Dock.qml	2026-11-16 16:48:19.270261080 +0300
+@@ -1,5 +1,4 @@
+ import QtQuick
+-import QtQuick.Effects
+ 
+ Item {
+     id: kok
+@@ -66,18 +65,17 @@
+         smooth: true
+     }
+ 
+-    // Panel ustundeki yumusak golge (8 px asagi).
+-    Rectangle {
+-        x: panelKutu.x + 6
+-        y: panelKutu.y + 8
+-        width: panelKutu.width - 12
+-        height: panelKutu.height
+-        radius: 20
+-        color: "#66000000"
+-        layer.enabled: true
+-        layer.effect: MultiEffect {
+-            blurEnabled: false
+-        }
++    // Panel golgesi: Python tarafinda bir kez uretilir. Onceden burada
++    // layer + MultiEffect vardi; yazilim render'da her karede ek gecis
++    // maliyeti cikariyordu. Artik tek dokulu dikdortgen.
++    Image {
++        source: golgeUrl
++        x: panelKutu.x - 6
++        y: panelKutu.y + 2
++        width: panelKutu.width + 12
++        height: panelKutu.height + 20
++        fillMode: Image.Stretch
++        smooth: true
+     }
+ 
+     Item {
+@@ -96,24 +94,6 @@
+             source: kok.arkaplanPanel
+             fillMode: Image.Stretch
+             cache: false
+-            visible: false
+-        }
+-
+-        MultiEffect {
+-            anchors.fill: parent
+-            source: arkaPlan
+-            blurEnabled: false
+-            maskEnabled: true
+-            maskSource: panelMaske
+-        }
+-
+-        Rectangle {
+-            id: panelMaske
+-            anchors.fill: parent
+-            radius: 20
+-            color: "black"
+-            layer.enabled: true
+-            visible: false
+         }
+ 
+         // %80 opak koyu katman + ust isik gradyani.
+@@ -204,7 +184,7 @@
+                     sourceSize.height: 160
+                     fillMode: Image.PreserveAspectFit
+                     smooth: true
+-                    mipmap: true
++                    mipmap: false
+                     asynchronous: true
+                 }
+ 

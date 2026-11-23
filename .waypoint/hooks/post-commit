@@ -1,0 +1,41 @@
+#!/bin/sh
+# Pushes every commit to the project's GitHub remote (origin), so work never lives only on this computer.
+# No remote → nothing to do. A failed push never undoes the commit; it is reported and retried on the next commit.
+
+cd "$(git rev-parse --show-toplevel 2>/dev/null)" 2>/dev/null || exit 0
+
+# The project's own post-commit hook from before Waypoint (if any); its result doesn't stop the push.
+if git config --get waypoint.oncekiHooks >/dev/null 2>&1; then  # none: skip starting a second sh
+  sh .waypoint/hooks/onceki-hook post-commit
+fi
+
+# Once a day: tell the AI when a newer Waypoint exists (it never installs anything by itself).
+# Python (a slow start on Windows) runs only when today's answer isn't cached yet or differs from the installed version.
+if [ "${WAYPOINT_NO_UPDATE_CHECK:-}" != "1" ]; then
+  CACHED_DAY="" CACHED_VERSION="" LOCAL_VERSION=""
+  read -r CACHED_DAY CACHED_VERSION 2>/dev/null < .waypoint/.son-surum
+  read -r LOCAL_VERSION 2>/dev/null < .waypoint/VERSION
+  case "$CACHED_VERSION" in *[[:cntrl:]]) CACHED_VERSION=${CACHED_VERSION%?} ;; esac  # Windows line ending
+  case "$LOCAL_VERSION" in *[[:cntrl:]]) LOCAL_VERSION=${LOCAL_VERSION%?} ;; esac
+  if [ "$CACHED_DAY" != "$(date '+%Y-%m-%d')" ] || { [ "$CACHED_VERSION" != "$LOCAL_VERSION" ] && [ "$CACHED_VERSION" != "-" ]; }; then
+    for PY in python python3 "py -3"; do  # 'python' first: on Windows 'python3' is often only the Store stub
+      # shellcheck disable=SC2086  # "py -3" must split into command and argument
+      case "$($PY --version 2>&1)" in "Python 3"*) $PY .waypoint/hooks/kontrol.py --surum; break ;; esac
+    done
+  fi
+fi
+
+[ "${WAYPOINT_NO_PUSH:-}" = "1" ] && exit 0
+git remote get-url origin >/dev/null 2>&1 || exit 0
+BRANCH=$(git symbolic-ref --short -q HEAD) || exit 0  # mid-rebase (no branch): skip
+
+STAMP=$(date '+%Y-%m-%d %H:%M')
+if OUT=$(GIT_TERMINAL_PROMPT=0 git push -q origin "$BRANCH" 2>&1); then
+  printf '%s  YUKLE  %s\n' "$STAMP" "$BRANCH" >> .waypoint/oto-kayit.log 2>/dev/null
+  echo "☁️ Kayıt GitHub'a yüklendi ($BRANCH)."
+else
+  printf '%s  YUKLENEMEDI  %s: %s\n' "$STAMP" "$BRANCH" "$(printf '%s\n' "$OUT" | tail -n 1)" >> .waypoint/oto-kayit.log 2>/dev/null
+  echo "⚠️ Kayıt alındı ama GitHub'a yüklenemedi ($BRANCH). İnternet bağlantısını ve GitHub girişini kontrol edin; sonraki kayıtta tekrar denenir."
+  printf '%s\n' "$OUT" | tail -n 5
+fi
+exit 0

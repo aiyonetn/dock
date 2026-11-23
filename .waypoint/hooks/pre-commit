@@ -1,0 +1,34 @@
+#!/bin/sh
+# Checks project rules, then runs the project's tests before every commit.
+# The test command is the first `backticked` line under "## Testleri çalıştırma"
+# in .waypoint/ILERLEME.md. If it's missing or still "...", there are no tests yet → allow (kontrol.py warns when code changed).
+# Tests stop after 5 minutes (WAYPOINT_TEST_TIMEOUT, in seconds, changes this).
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+# The project's own pre-commit hook from before Waypoint (if any) runs first, e.g. a formatter.
+# (Checking the setting here saves starting a second sh when there is none.)
+if git config --get waypoint.oncekiHooks >/dev/null 2>&1; then
+  sh .waypoint/hooks/onceki-hook pre-commit || exit 1
+fi
+
+# 'python' first: on Windows 'python3' is often only the Microsoft Store stub, and trying it costs a slow process start.
+# Each candidate must report Python 3 ('python' may be Python 2 on old systems).
+PYTHON=""
+if [ "${WAYPOINT_NO_PYTHON:-}" != "1" ]; then
+  for candidate in python python3 "py -3"; do
+    command -v "${candidate%% *}" >/dev/null 2>&1 || continue
+    # shellcheck disable=SC2086  # "py -3" must split into command and argument
+    case "$($candidate --version 2>&1)" in "Python 3"*) PYTHON=$candidate; break ;; esac
+  done
+fi
+
+if [ -z "$PYTHON" ]; then
+  printf '%s\n' "❌ Python 3 bulunamadı; Waypoint kuralları denetlenemediği için kayıt engellendi." "   Python 3'ü kurun: https://www.python.org/downloads/ (Windows'ta kurulumda \"Add python.exe to PATH\" kutusunu işaretleyin), sonra tekrar deneyin." >&2
+  exit 1
+fi
+
+# Rules first, then the tests (with a time limit, so a test runner left in watch mode can't hang the commit), in one
+# Python run. Both are skipped when `kontrol.py --dogrula` just passed on exactly this content (e.g. pi-mcp's check).
+$PYTHON .waypoint/hooks/kontrol.py --kayit-oncesi || exit 1
+exit 0
